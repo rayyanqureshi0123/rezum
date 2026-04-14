@@ -1,191 +1,87 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import User from "../models/User.js";
+import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 
-// ================= GOOGLE AUTH =================
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const googleAuth = (req, res, next) => {
-  next();
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-//  GOOGLE CALLBACK
-const googleCallback = async (req, res) => {
+export const register = async (req, res) => {
+  const { name, email, password } = req.body;
   try {
-    const profile = req.user;
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    // check if user exists
-    let user = await User.findOne({ googleId: profile.id });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    if (!user) {
-      // check if email already exists (important edge case)
-      const existingEmailUser = await User.findOne({
-        email: profile.emails[0].value,
-      });
-
-      if (existingEmailUser) {
-        // link google account
-        existingEmailUser.googleId = profile.id;
-        await existingEmailUser.save();
-        user = existingEmailUser;
-      } else {
-        // create new user
-        user = await User.create({
-          googleId: profile.id,
-          name: profile.displayName,
-          email: profile.emails[0].value,
-          profileImage: "",
-        });
-      }
-    }
-
-    // generate JWT
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      message: "Google login successful",
-      user,
-      token,
+    const user = await User.create({ name, email, password: hashedPassword });
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      token: generateToken(user._id),
     });
-
   } catch (error) {
-    console.error("Google Auth Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('REGISTRATION ERROR:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-
-
-const registerUser = async (req, res) => {
+export const login = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "Please provide all fields",
+    const user = await User.findOne({ email });
+    if (user && user.password && (await bcrypt.compare(password, user.password))) {
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        token: generateToken(user._id),
+        avatar: user.avatar
       });
+    } else {
+      res.status(401).json({ message: 'Invalid credentials' });
     }
+  } catch (error) {
+    console.error('LOGIN ERROR:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const googleAuth = async (req, res) => {
+  const { credential } = req.body;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const { name, email, sub, picture } = ticket.getPayload();
 
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        message: "Invalid email format",
-      });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        message: "Password must be at least 8 characters long",
-      });
-    }
-
-   
     let user = await User.findOne({ email });
 
     if (user) {
-      return res.status(400).json({
-        message: "User already exists",
-      });
+      if (!user.googleId) {
+        user.googleId = sub;
+        user.avatar = picture;
+        await user.save();
+      }
+    } else {
+      user = await User.create({ name, email, googleId: sub, avatar: picture });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      profileImage: "",
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      token: generateToken(user._id),
+      avatar: user.avatar
     });
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.status(201).json({
-      message: "User registered successfully",
-      user,
-      token,
-    });
-
   } catch (error) {
-    console.error("Register Error:", error);
-    res.status(500).json({
-      message: "Server error",
-    });
+    console.error(error);
+    res.status(500).json({ message: 'Google authentication failed' });
   }
-};
-
-const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Please provide email and password",
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        message: "Invalid email format",
-      });
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({
-        message: "User not found",
-      });
-    }
-
-    if (!user.password) {
-      return res.status(400).json({
-        message: "Please login with Google",
-      });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid credentials",
-      });
-    }
-
-    // 🔹 Generate JWT
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.status(200).json({
-      message: "Login successful",
-      user,
-      token,
-    });
-
-  } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({
-      message: "Server error",
-    });
-  }
-};
-
-
-export {
-  googleAuth,
-  googleCallback,
-  registerUser,
-  loginUser,
 };
