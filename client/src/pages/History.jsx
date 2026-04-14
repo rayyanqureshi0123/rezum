@@ -1,0 +1,246 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FileText, Trash2, ArrowRight, Loader2, Calendar, Award, Briefcase, Search, Filter } from 'lucide-react';
+import { resumeAPI } from '../api';
+
+const HistoryPage = () => {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const { data } = await resumeAPI.getHistory();
+      setHistory(data.resumes || []);
+    } catch (err) {
+      setError('Failed to load history. Please try refreshing or logging in again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this analysis record?')) return;
+    try {
+      await resumeAPI.delete(id);
+      setHistory(history.filter(item => item._id !== id));
+    } catch (err) {
+      alert('Delete failed');
+    }
+  };
+
+  const filteredHistory = history.filter(item => {
+    const searchStr = searchTerm.toLowerCase();
+    const fileName = (item.fileName || 'Resume Analysis').toLowerCase();
+    const roles = (item.analysis?.jobRoleSuggestions || []).join(' ').toLowerCase();
+    const skills = [
+      ...(item.analysis?.skills?.technical || []),
+      ...(item.analysis?.skills?.soft || [])
+    ].join(' ').toLowerCase();
+    const insight = (item.analysis?.marketReadinessInsight || '').toLowerCase();
+
+    return fileName.includes(searchStr) || 
+           roles.includes(searchStr) || 
+           skills.includes(searchStr) || 
+           insight.includes(searchStr);
+  });
+
+  return (
+    <div className="min-h-screen pt-28 pb-12 px-6 bg-[#030712]">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <motion.h1 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-4xl md:text-5xl font-extrabold"
+            >
+              Analysis <span className="gradient-text">History</span>
+            </motion.h1>
+            <p className="text-slate-400">
+              Access all your past resume evaluations and track your improvements over time.
+            </p>
+          </div>
+
+          <div className="relative group min-w-[350px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-primary-400 transition-colors" />
+            <input 
+              type="text"
+              placeholder="Search by file, role, skills, or insights..."
+              className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all font-medium"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Info Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           <div className="glass-card p-4 flex items-center gap-4 border-primary-500/20 bg-primary-500/5">
+             <div className="w-12 h-12 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400">
+                <FileText className="w-6 h-6" />
+             </div>
+             <div>
+               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Evaluated</p>
+               <h4 className="text-2xl font-bold">{history.length}</h4>
+             </div>
+           </div>
+           
+           <div className="glass-card p-4 flex items-center gap-4 border-accent-500/20 bg-accent-500/5">
+             <div className="w-12 h-12 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-400">
+                <Award className="w-6 h-6" />
+             </div>
+             <div>
+               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Best Score</p>
+               <h4 className="text-2xl font-bold">
+                 {history.length > 0 ? Math.max(...history.map(h => h.analysis?.atsScore || 0)) : 0}%
+               </h4>
+             </div>
+           </div>
+
+           <div className="glass-card p-4 flex items-center gap-4 border-green-500/20 bg-green-500/5">
+             <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400">
+                <Briefcase className="w-6 h-6" />
+             </div>
+             <div>
+               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Avg. ATS Score</p>
+               <h4 className="text-2xl font-bold">
+                 {history.length > 0 ? Math.round(history.reduce((a, b) => a + (b.analysis?.atsScore || 0), 0) / history.length) : 0}%
+               </h4>
+             </div>
+           </div>
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="glass-card border-red-500/30 bg-red-500/10 p-4 text-red-400 flex items-center justify-between">
+            <p>{error}</p>
+            <motion.button 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              onClick={fetchHistory} 
+              className="text-sm font-bold underline"
+            >
+              Retry
+            </motion.button>
+          </div>
+        )}
+
+        {/* History List */}
+        <div className="space-y-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-12 h-12 text-primary-500 animate-spin" />
+              <p className="text-slate-500">Loading your analysis history...</p>
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="glass-card p-20 text-center space-y-4">
+              <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto text-slate-600">
+                <Search className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold">No records found</h3>
+              <p className="text-slate-500">
+                {searchTerm ? `No results for "${searchTerm}"` : "You haven't analyzed any resumes yet."}
+              </p>
+              {!searchTerm && (
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/dashboard')} 
+                  className="btn-primary"
+                >
+                  Analyze New Resume
+                </motion.button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredHistory.map((item, idx) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ delay: idx * 0.05, duration: 0.4 }}
+                  whileHover={{ 
+                    y: -10, 
+                    scale: 1.03,
+                    backgroundColor: "rgba(30, 41, 59, 0.5)",
+                    boxShadow: "0 20px 50px -15px rgba(14, 165, 233, 0.3)",
+                    borderColor: "rgba(14, 165, 233, 0.4)"
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  key={item._id} 
+                  className="glass-card group transition-all cursor-pointer overflow-hidden p-6 flex flex-col gap-4 relative"
+                  onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis } })}
+                >
+                  {/* Score Badge */}
+                  <div className={`absolute top-0 right-0 px-4 py-1.5 rounded-bl-xl text-sm font-bold ${
+                    (item.analysis?.atsScore || 0) >= 80 ? 'bg-green-500/20 text-green-400' : 
+                    (item.analysis?.atsScore || 0) >= 60 ? 'bg-yellow-500/20 text-yellow-400' : 
+                    'bg-red-500/20 text-red-400'
+                  }`}>
+                    {item.analysis?.atsScore || 0}% Score
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center text-primary-400 shrink-0 group-hover:scale-110 transition-transform">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg truncate max-w-[180px] group-hover:text-primary-400 transition-colors">
+                        {item.fileName || 'Resume Analysis'}
+                      </h4>
+                      <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-400 mb-2">Primary Match:</div>
+                    <div className="flex flex-wrap gap-2">
+                       {item.analysis?.jobRoleSuggestions?.slice(0, 2).map((role, rIdx) => (
+                         <span key={rIdx} className="bg-slate-800/50 text-slate-300 px-2 py-1 rounded text-xs border border-white/5">
+                           {role}
+                         </span>
+                       ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                    <span className="text-xs text-slate-500 uppercase font-bold tracking-widest">View Report</span>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={(e) => handleDelete(item._id, e)}
+                        className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                        title="Delete record"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-400 group-hover:translate-x-1 transition-transform">
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HistoryPage;

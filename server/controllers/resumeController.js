@@ -20,9 +20,14 @@ export const analyzeResume = async (req, res) => {
     const buffer = Buffer.from(response.data);
     const pdfData = await pdfParse(buffer);
     const resumeText = pdfData.text.trim();
+    
+    const jobDescription = req.body.jobDescription || "";
 
-    // FEATURE 3: PDF "Health" Check
-    // If the PDF doesn't have enough text, it's likely a scan/image or corrupted.
+    // Manual check for contact info to prevent AI hallucinations
+    const hasEmail = /[\w.-]+@[\w.-]+\.\w+/.test(resumeText);
+    const hasPhone = /[\d\s-]{7,}/.test(resumeText);
+    const contactHint = (hasEmail || hasPhone) ? "PRESENT (Confirmed by parser)" : "MISSING";
+
     if (resumeText.length < 50) {
        // Delete the bad file immediately
        await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
@@ -34,41 +39,72 @@ export const analyzeResume = async (req, res) => {
     const completion = await groq.chat.completions.create({
       messages: [
         {
+          role: "system",
+          content: "You are an elite Tech Recruiter and ATS Optimization Expert. Your goal is to provide deep, brutally honest, and highly specific resume feedback. Never give the same generic advice twice. Be extremely critical about quantifiable results and skill relevance."
+        },
+        {
           role: "user",
           content: `
-            You are an expert ATS (Applicant Tracking System) simulator and elite tech recruiter. 
-            Analyze the following resume text. Focus on these specific 7 features:
+            Analyze the following unique resume text. You MUST avoid generic placeholders. 
+            Provide feedback that is ONLY relevant to this specific candidate.
 
-            1. **Overall AI Analysis**: Provide a high-level overview of the resume's quality.
-            2. **Content Suggestions**: Give actionable advice to improve writing and phrasing.
-            3. **Error Detector**: Catch typos, formatting issues, bad dates, and elements that might break an ATS.
-            4. **Key Skill Identifier**: List both Technical and Soft skills found.
-            5. **Job Role Suggestions**: Suggest 3-5 specific job titles the user should apply for based on their skills.
-            6. **Missing Section Alert**: Detect if crucial sections like Contact, Experience, Skills, Education, or Projects are missing or poorly defined.
-            7. **ATS Score**: An overall match score out of 100.
+            Tasks:
+            1. **Evidence-Based AI Analysis**: Analyze the candidate's specific background. No generic fluff.
+            2. **Quantifiable Content Suggestions**: Point to specific parts of THIS resume that need more data.
+            3. **Structural Formatting Warnings**: Note only TRULY problematic formatting like jumbled text or overlapping lines. IMPORTANT: Common icons/symbols (like phone, email, or LinkedIn icons) are EXCELLENT for modern resumes - do NOT flag them as errors or non-standard characters.
+            4. **Extracted Skills**: List only the skills actually found in the text.
+            5. **Adaptive Career Path**: Suggest 3-5 job titles that specifically match this candidate's history.
+            6. **Missing Section Alert**: Check for standard sections. 
+               - CONTACT INFO STATUS: ${contactHint}. If this says PRESENT, do NOT list "Contact" as missing under any circumstances.
+               - If the resume has a strong "Projects" section, do NOT flag "Experience" as missing.
+            7. **ATS Score Calculation**: Derive an honest score (0-100).
+            8. **Interview Probability**: Provide a percentage (0-100) based on how competitive this resume is for top-tier tech roles.
+            9. **Section Ratings**: Provide a rating (1-10) for these 5 areas: ["Format", "Keywords", "Quantifiable", "Structure", "Impact"].
+            10. **Market Readiness Insight**: A 1-sentence punchy insight about the candidate's market value.
+            ${jobDescription ? `
+            11. **JD Match Evaluation**: Compare the resume against the provided Job Description. Assign an objective match score (0-100) based on how well the candidate's skills and experience fit the JD.
+            12. **JD Insights**: Provide 2-3 specific, actionable insights explaining the match score—what aligns well and what critical requirements from the JD are missing.
+            ` : `
+            Do NOT include "jdMatchScore" or "jdInsights" in the JSON output, as no job description was provided.`}
 
-            Format the response strictly as a JSON object WITH NO MARKDOWN (just the JSON) with the following structure:
+            Format strictly as a JSON object with this structure:
             {
-              "atsScore": 85,
+              "atsScore": number,
+              "interviewProbability": number,
+              "sectionRatings": {
+                "format": number,
+                "keywords": number,
+                "quantifiable": number,
+                "structure": number,
+                "impact": number
+              },
+              "marketReadinessInsight": "string",
               "overallAnalysis": "string",
               "missingSections": ["string"],
               "errors": ["string"],
               "skills": { "technical": ["string"], "soft": ["string"] },
               "contentSuggestions": ["string"],
               "jobRoleSuggestions": ["string"]
+              ${jobDescription ? ',\n              "jdMatchScore": number,\n              "jdInsights": ["string"]' : ''}
             }
             
-            Resume Text:
+            Resume Text for Analysis:
+            ---
             ${resumeText}
+            ---
+            ${jobDescription ? `\n\n            Job Description Target:\n            ---\n            ${jobDescription}\n            ---` : ''}
           `,
         },
       ],
       model: "llama-3.3-70b-versatile",
+      temperature: 0.7, 
       response_format: { type: "json_object" },
     });
 
     const aiResponse = completion.choices[0].message.content;
     const analysisResult = JSON.parse(aiResponse);
+
+    const originalName = req.file.originalname;
 
     // FEATURE 2: Privacy First Cleanup
     // We actively delete the raw PDF from Cloudinary after extraction so personal data isn't exposed online.
@@ -77,6 +113,8 @@ export const analyzeResume = async (req, res) => {
     const newResume = await Resume.create({
       userId: req.user._id,
       fileUrl: "deleted-for-privacy", // Overwrite standard FileURL
+      fileName: originalName,
+      jobDescription: jobDescription || null,
       analysis: analysisResult,
     });
 
