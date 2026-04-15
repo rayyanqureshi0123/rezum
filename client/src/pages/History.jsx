@@ -169,24 +169,39 @@ const HistoryPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredHistory.map((item, idx) => (
                 <motion.div 
-                  initial={{ opacity: 0, y: 50 }}
+                  initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ delay: idx * 0.05, duration: 0.4 }}
-                  whileHover={{ 
-                    y: -10, 
-                    scale: 1.03,
-                    backgroundColor: "rgba(30, 41, 59, 0.5)",
-                    boxShadow: "0 20px 50px -15px rgba(14, 165, 233, 0.3)",
-                    borderColor: "rgba(14, 165, 233, 0.4)"
+                  viewport={{ once: true }}
+                  transition={{ 
+                    duration: 0.3, 
+                    delay: Math.min(idx * 0.05, 0.3) 
                   }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ 
+                    y: -2,
+                    zIndex: 50,
+                    backgroundColor: "rgba(30, 41, 59, 1)",
+                    borderColor: "rgba(14, 165, 233, 0.5)",
+                    boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.8)",
+                    transition: { delay: 0, duration: 0.2 }
+                  }}
                   key={item._id} 
-                  className="glass-card group transition-all cursor-pointer overflow-hidden p-6 flex flex-col gap-4 relative"
+                  className="glass-card group transition-colors duration-200 cursor-pointer overflow-hidden p-6 flex flex-col gap-4 relative"
                   onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis, resume: item } })}
                 >
+                  {/* Delete Button - Only visible on hover */}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteModal({ isOpen: true, id: item._id });
+                    }}
+                    className="absolute top-4 right-4 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-30"
+                    title="Delete record"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
                   {/* Score Badge */}
-                  <div className={`absolute top-0 right-0 px-4 py-1.5 rounded-bl-xl text-sm font-bold ${
+                  <div className={`absolute top-0 left-0 px-4 py-1.5 rounded-br-xl text-[10px] font-black uppercase tracking-widest ${
                     (item.analysis?.atsScore || 0) >= 80 ? 'bg-green-500/20 text-green-400' : 
                     (item.analysis?.atsScore || 0) >= 60 ? 'bg-yellow-500/20 text-yellow-400' : 
                     'bg-red-500/20 text-red-400'
@@ -220,24 +235,6 @@ const HistoryPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-widest">View Report</span>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteModal({ isOpen: true, id: item._id });
-                        }}
-                        className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                        title="Delete record"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <div className="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-400 group-hover:translate-x-1 transition-transform">
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </div>
                 </motion.div>
               ))}
             </div>

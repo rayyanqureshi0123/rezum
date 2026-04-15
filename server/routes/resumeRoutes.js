@@ -1,5 +1,5 @@
 import express from 'express';
-import { analyzeResume, getResumeHistory, deleteResume, rewriteBullet, generateCoverLetter } from '../controllers/resumeController.js';
+import { analyzeResume, getResumeHistory, getResumeById, deleteResume, rewriteBullet, generateCoverLetter } from '../controllers/resumeController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
@@ -36,6 +36,7 @@ router.post('/analyze', protect, upload.single('resume'), analyzeResume);
 router.post('/rewrite-bullet', protect, rewriteBullet);
 router.post('/cover-letter', protect, generateCoverLetter);
 router.get('/history', protect, getResumeHistory);
+router.get('/:id', protect, getResumeById);
 router.delete('/:id', protect, deleteResume);
 
 export default router;

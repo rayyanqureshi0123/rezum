@@ -40,35 +40,25 @@ export const analyzeResume = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are an elite Tech Recruiter and ATS Optimization Expert. Your goal is to provide deep, brutally honest, and highly specific resume feedback. Never give the same generic advice twice. Be extremely critical about quantifiable results and skill relevance."
+          content: "You are a Surgical Tech Recruiter and ATS Optimization Script. You do not give generic advice. You analyze resume text with extreme precision, looking for missing quantifiable statistics (%, $, months), weak action verbs, and skill mismatches. You are brutally honest. If a resume is bad, give it a bad score. Your goal is to find the deep gaps that human recruiters notice but generic AI misses."
         },
         {
           role: "user",
           content: `
-            Analyze the following unique resume text. You MUST avoid generic placeholders. 
-            Provide feedback that is ONLY relevant to this specific candidate.
+            DIAGNOSTIC TASK: Run a deep-tissue diagnostic on the following resume text. 
+            Avoid all boilerplate phrases like 'showcases a strong foundation' or 'solid background'. 
+            If you catch yourself being generic, DELETE and start over.
 
-            Tasks:
-            1. **Evidence-Based AI Analysis**: Analyze the candidate's specific background. No generic fluff.
-            2. **Quantifiable Content Suggestions**: Point to specific parts of THIS resume that need more data.
-            3. **Structural Formatting Warnings**: Note only TRULY problematic formatting like jumbled text or overlapping lines. IMPORTANT: Common icons/symbols (like phone, email, or LinkedIn icons) are EXCELLENT for modern resumes - do NOT flag them as errors or non-standard characters.
-            4. **Extracted Skills**: List only the skills actually found in the text.
-            5. **Adaptive Career Path**: Suggest 3-5 job titles that specifically match this candidate's history.
-            6. **Missing Section Alert**: Check for standard sections. 
-               - CONTACT INFO STATUS: ${contactHint}. If this says PRESENT, do NOT list "Contact" as missing under any circumstances.
-               - If the resume has a strong "Projects" section, do NOT flag "Experience" as missing.
-            7. **ATS Score Calculation**: Derive an honest score (0-100).
-            8. **Interview Probability**: Provide a percentage (0-100) based on how competitive this resume is for top-tier tech roles.
-            9. **Section Ratings**: Provide a rating (1-10) for these 5 areas: ["Format", "Keywords", "Quantifiable", "Structure", "Impact"].
-            10. **Market Readiness Insight**: A 1-sentence punchy insight about the candidate's market value.
-            ${jobDescription ? `
-            11. **JD Match Evaluation**: Compare the resume against the provided Job Description. Assign an objective match score (0-100) based on how well the candidate's skills and experience fit the JD.
-            12. **JD Insights**: Provide 2-3 specific, actionable insights explaining the match score—what aligns well and what critical requirements from the JD are missing.
-            13. **Keyword Gap Analysis**: Extract the top 10-15 important keywords/skills from the Job Description. For each keyword, mark whether it is FOUND or MISSING in the resume. Return as an array of objects.
-            ` : `
-            Do NOT include "jdMatchScore", "jdInsights", or "keywordGap" in the JSON output, as no job description was provided.`}
+            SPECIFIC REQUIREMENTS:
+            1. **No-Fluff Analysis**: Provide a 2-paragraph surgical breakdown. Paragraph 1: Analyze the specific technical depth demonstrated. Paragraph 2: Critique the lack of impact or results in their specific roles.
+            2. **Direct Bullet Point Fixes**: Identify 3 specific bullets from THIS resume and explain exactly how to add numbers or technical proof to them.
+            3. **Keyword Gap**: Compare strictly. If they mention 'React' but not 'Redux' which is in the JD, flag it.
+            4. **Career Trajectory**: Only suggest roles that are the logical NEXT step for THIS specific candidate's seniority level.
+            5. **ATS Scoring**: Be harsh. Penalize for: generic bullet points, lack of data, and missing core role requirements.
+            
+            FORMATTING CONTEXT: Common contact icons (Phone/Email symbols) are GOOD. Do not flag standard UTF-8 symbols as errors.
 
-            Format strictly as a JSON object with this structure:
+            Return strictly as a JSON object with this structure:
             {
               "atsScore": number,
               "interviewProbability": number,
@@ -88,17 +78,17 @@ export const analyzeResume = async (req, res) => {
               "jobRoleSuggestions": ["string"]
               ${jobDescription ? ',\n              "jdMatchScore": number,\n              "jdInsights": ["string"],\n              "keywordGap": [{ "keyword": "string", "found": true/false }]' : ''}
             }
-            
-            Resume Text for Analysis:
+
+            Resume Text for Deep Analysis:
             ---
             ${resumeText}
             ---
-            ${jobDescription ? `\n\n            Job Description Target:\n            ---\n            ${jobDescription}\n            ---` : ''}
+            ${jobDescription ? `\n\n            Target Job Description (JD):\n            ---\n            ${jobDescription}\n            ---` : ''}
           `,
         },
       ],
       model: "llama-3.3-70b-versatile",
-      temperature: 0.7, 
+      temperature: 0.5, 
       response_format: { type: "json_object" },
     });
 
@@ -106,9 +96,6 @@ export const analyzeResume = async (req, res) => {
     const analysisResult = JSON.parse(aiResponse);
 
     const originalName = req.file.originalname;
-
-    // We now keep the file in Cloudinary to allow the user to view it on the dashboard.
-    // It will be deleted when the user deletes the analysis record.
 
     const newResume = await Resume.create({
       userId: req.user._id,
@@ -144,6 +131,22 @@ export const getResumeHistory = async (req, res) => {
     res.json({ success: true, count: resumes.length, resumes });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch resume history', error: error.message });
+  }
+};
+
+// Fetch single resume analysis
+export const getResumeById = async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) {
+      return res.status(404).json({ message: 'Resume analysis not found' });
+    }
+    if (resume.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to view this record' });
+    }
+    res.json({ success: true, resume });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch resume analysis', error: error.message });
   }
 };
 

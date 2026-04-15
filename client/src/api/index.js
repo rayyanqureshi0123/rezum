@@ -56,6 +56,7 @@ export const resumeAPI = {
     timeout: 120000, // 2 min timeout for AI analysis specifically
   }),
   getHistory: () => api.get('/resume/history'),
+  getById: (id) => api.get(`/resume/${id}`),
   delete: (id) => api.delete(`/resume/${id}`),
   rewriteBullet: (bulletPoint, jobTitle) => api.post('/resume/rewrite-bullet', { bulletPoint, jobTitle }),
   generateCoverLetter: (resumeId) => api.post('/resume/cover-letter', { resumeId }, { timeout: 120000 }),
