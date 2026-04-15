@@ -1,5 +1,5 @@
 import express from 'express';
-import { analyzeResume, getResumeHistory, deleteResume } from '../controllers/resumeController.js';
+import { analyzeResume, getResumeHistory, deleteResume, rewriteBullet, generateCoverLetter } from '../controllers/resumeController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
@@ -33,6 +33,8 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage: storage });
 
 router.post('/analyze', protect, upload.single('resume'), analyzeResume);
+router.post('/rewrite-bullet', protect, rewriteBullet);
+router.post('/cover-letter', protect, generateCoverLetter);
 router.get('/history', protect, getResumeHistory);
 router.delete('/:id', protect, deleteResume);
 

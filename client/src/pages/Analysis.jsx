@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer as RechartsResponsiveContainer 
 } from 'recharts';
@@ -15,7 +15,8 @@ import {
   ArcElement
 } from 'chart.js';
 import { PolarArea, Doughnut } from 'react-chartjs-2';
-import { CheckCircle2, AlertCircle, Award, Target, ChevronLeft, Download, Briefcase } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Award, Target, ChevronLeft, Download, Briefcase, Wand2, Loader2, FileText, Copy, Check, X } from 'lucide-react';
+import { resumeAPI } from '../api';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -34,69 +35,84 @@ const Analysis = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [result, setResult] = useState(location.state?.result || null);
+  const resumeData = location.state?.resume || null;
+
+  // Bullet Rewrite State
+  const [rewritingIdx, setRewritingIdx] = useState(null);
+  const [rewriteResults, setRewriteResults] = useState({});
+
+  const handleRewriteBullet = async (suggestion, index) => {
+    setRewritingIdx(index);
+    try {
+      const { data } = await resumeAPI.rewriteBullet(suggestion, result.jobRoleSuggestions?.[0] || '');
+      setRewriteResults(prev => ({ ...prev, [index]: data }));
+    } catch (err) {
+      setRewriteResults(prev => ({ ...prev, [index]: { error: 'Rewrite failed. Try again.' } }));
+    } finally {
+      setRewritingIdx(null);
+    }
+  };
+
+  const handleGenerateCoverLetter = () => {
+    navigate(`/cover-letter/${id}`);
+  };
 
   const handleExport = async () => {
     const element = document.getElementById('analysis-report');
     if (!element) return;
     
-    // Hide UI elements
-    const exportBtn = element.querySelector('.btn-primary');
-    const backBtn = element.querySelector('button');
-    if (exportBtn) exportBtn.style.display = 'none';
-    if (backBtn) backBtn.style.display = 'none';
+    // Create a clone to export so we don't flash/mess up the real UI
+    const clone = element.cloneNode(true);
+    clone.id = 'export-clone';
     
-    // Fix Gradient Text (html2canvas doesn't support background-clip: text)
-    const gradientTexts = element.querySelectorAll('.gradient-text');
+    // Styles for the clone to ensure perfect desktop layout
+    Object.assign(clone.style, {
+      position: 'absolute',
+      top: '-9999px',
+      left: '0',
+      width: '1280px',
+      maxWidth: '1280px',
+      margin: '0',
+      padding: '40px',
+      background: '#020617'
+    });
+    
+    // Cleanup the clone from UI-only elements
+    const elementsToHide = clone.querySelectorAll('.export-hide');
+    elementsToHide.forEach(el => el.remove());
+    
+    // Fix Gradient Text in Clone
+    const gradientTexts = clone.querySelectorAll('.gradient-text');
     gradientTexts.forEach(el => {
       el.style.background = 'none';
       el.style.webkitBackgroundClip = 'initial';
-      el.style.color = '#8b5cf6'; // Solid primary color for export
+      el.style.color = '#8b5cf6';
     });
-    
-    // Force stable layout
-    const originalStyle = element.getAttribute('style');
-    element.style.width = '1200px';
-    element.style.maxWidth = 'none';
-    element.style.margin = '0';
-    element.style.padding = '40px';
-    
+
+    document.body.appendChild(clone);
     window.scrollTo(0, 0);
     
     try {
-      const canvas = await html2canvas(element, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#020617',
-        width: 1200
+        width: 1280,
+        height: clone.scrollHeight,
+        windowWidth: 1280
       });
       
       const imgData = canvas.toDataURL('image/png');
-      
-      // Create a PDF with CUSTOM dimensions matching the content (Single Long Page)
-      const imgWidth = 210; // A4 Width in mm
+      const imgWidth = 210; 
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
       const pdf = new jsPDF('p', 'mm', [imgWidth, imgHeight]);
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      
-      pdf.save(`Rezum-AI-Analysis.pdf`);
+      pdf.save(`Rezum-AI-Analysis-${new Date().getTime()}.pdf`);
     } catch (error) {
       console.error('Export failed:', error);
       alert('Failed to export. Please try again.');
     } finally {
-      // Restore styles
-      if (originalStyle) {
-        element.setAttribute('style', originalStyle);
-      } else {
-        element.removeAttribute('style');
-      }
-      gradientTexts.forEach(el => {
-        el.style.background = '';
-        el.style.webkitBackgroundClip = '';
-        el.style.color = '';
-      });
-      if (exportBtn) exportBtn.style.display = 'flex';
-      if (backBtn) backBtn.style.display = 'flex';
+      document.body.removeChild(clone);
     }
   };
 
@@ -138,7 +154,7 @@ const Analysis = () => {
         <motion.button 
           whileHover={{ x: -5 }}
           onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+          className="export-hide flex items-center gap-2 text-slate-400 hover:text-white transition-colors group mb-6"
         >
           <ChevronLeft className="w-5 h-5 transition-transform" />
           Back to Portfolio
@@ -146,7 +162,7 @@ const Analysis = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Content (Left) */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-8 space-y-6 md:space-y-8">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -163,9 +179,9 @@ const Analysis = () => {
                     maintainAspectRatio: false 
                   }} 
                 />
-                <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
-                  <span className="text-6xl font-black text-white leading-none">{result.atsScore}</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-[0.3em] mt-2 translate-y-1">Score</span>
+                <div className="absolute bottom-0 left-0 right-0 w-full flex flex-col items-center justify-center pb-4 text-center pointer-events-none">
+                  <span className="text-6xl font-black text-white leading-none block">{result.atsScore}</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-[0.3em] mt-2 block">Score</span>
                 </div>
               </div>
 
@@ -182,10 +198,32 @@ const Analysis = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleExport} 
-                    className="btn-primary flex items-center gap-2"
+                    className="export-hide btn-primary flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" /> Export Report
                   </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleGenerateCoverLetter}
+                    className="export-hide btn-secondary flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Write Cover Letter
+                  </motion.button>
+                  {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
+                    <motion.a 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      href={resumeData.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="export-hide btn-secondary bg-white/5 border-white/10 flex items-center gap-2 transition-all font-bold text-sm whitespace-nowrap"
+                    >
+                      <Briefcase className="w-4 h-4 text-primary-400" />
+                      View Uploaded Resume
+                    </motion.a>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -234,6 +272,43 @@ const Analysis = () => {
               </motion.div>
             )}
 
+            {/* Keyword Gap Heatmap */}
+            {result.keywordGap && result.keywordGap.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="glass-card p-6 md:p-8"
+              >
+                <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-primary-400" /> Keyword Gap Analysis
+                </h3>
+                <p className="text-sm text-slate-400 mb-6">Keywords extracted from the Job Description — see which ones your resume covers.</p>
+                <div className="flex flex-wrap gap-3 w-full">
+                  {result.keywordGap.map((item, i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.03 }}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                        item.found 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      }`}
+                    >
+                      {item.found ? <CheckCircle2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      {item.keyword}
+                    </motion.div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-6 mt-6 text-xs text-slate-500">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Found in Resume</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> Missing from Resume</span>
+                </div>
+              </motion.div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Key Skills */}
               <motion.div 
@@ -245,12 +320,12 @@ const Analysis = () => {
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <Award className="w-5 h-5 text-accent-400" /> Professional Skills
                 </h3>
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-2 mb-6 w-full">
                   {combinedSkills.map((skill, i) => (
                     <motion.span 
                       key={i} 
                       whileHover={{ scale: 1.1, y: -2 }}
-                      className="px-3 py-1.5 bg-slate-800 border border-white/5 rounded-lg text-sm font-medium hover:bg-slate-700 hover:text-primary-400 transition-colors cursor-default"
+                      className="px-3 py-1.5 bg-slate-800 border border-white/5 rounded-lg text-sm font-medium hover:bg-slate-700 hover:text-primary-400 transition-colors cursor-default inline-block break-words"
                     >
                       {skill}
                     </motion.span>
@@ -287,14 +362,45 @@ const Analysis = () => {
                 </h3>
                 <div className="space-y-4">
                   {(result.contentSuggestions || []).map((suggestion, i) => (
-                    <motion.div 
-                      key={i} 
-                      whileHover={{ x: 5 }}
-                      className="flex gap-3 p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:border-primary-500/20 transition-all"
-                    >
-                      <div className="w-2 h-2 mt-2 rounded-full bg-primary-500 shrink-0" />
-                      <p className="text-sm text-slate-300 italic">"{suggestion}"</p>
-                    </motion.div>
+                    <div key={i} className="space-y-2">
+                      <motion.div 
+                        whileHover={{ x: 5 }}
+                        className="flex gap-3 p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:border-primary-500/20 transition-all"
+                      >
+                        <div className="w-2 h-2 mt-2 rounded-full bg-primary-500 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm text-slate-300 italic">"{suggestion}"</p>
+                        </div>
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleRewriteBullet(suggestion, i)} 
+                          disabled={rewritingIdx === i}
+                          className="export-hide shrink-0 p-2 text-accent-400 hover:bg-accent-500/10 rounded-lg transition-all"
+                          title="Rewrite with AI"
+                        >
+                          {rewritingIdx === i ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                        </motion.button>
+                      </motion.div>
+                      {/* AI Rewrite Result */}
+                      <AnimatePresence>
+                        {rewriteResults[i] && !rewriteResults[i].error && (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="ml-5 p-4 bg-accent-500/5 rounded-xl border border-accent-500/20"
+                          >
+                            <p className="text-xs text-accent-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-1"><Wand2 className="w-3 h-3" /> AI-Improved (STAR Method)</p>
+                            <p className="text-sm text-white font-medium">"{rewriteResults[i].improved}"</p>
+                            <p className="text-xs text-slate-500 mt-2 italic">{rewriteResults[i].explanation}</p>
+                          </motion.div>
+                        )}
+                        {rewriteResults[i]?.error && (
+                          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="ml-5 text-xs text-red-400">{rewriteResults[i].error}</motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ))}
                 </div>
               </motion.div>
@@ -314,7 +420,7 @@ const Analysis = () => {
                 </h3>
                 <div className="flex flex-wrap gap-3">
                   {(result.missingSections || []).map((section, i) => (
-                    <span key={i} className="px-4 py-2 bg-red-500/10 text-red-400 rounded-xl border border-red-500/10 text-sm font-bold">
+                    <span key={i} className="px-4 py-2 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20 text-sm font-bold whitespace-nowrap">
                       {section}
                     </span>
                   ))}
@@ -333,10 +439,10 @@ const Analysis = () => {
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-yellow-400">
                   <AlertCircle className="w-5 h-5" /> Formatting Warnings
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {(result.errors || []).filter(e => typeof e === 'string').map((error, i) => (
-                    <div key={i} className="text-sm text-slate-400 flex items-center gap-2 bg-white/5 p-2 rounded-lg">
-                       <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" /> {error}
+                    <div key={i} className="text-sm text-slate-400 flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                       <span className="w-2 h-2 bg-yellow-500 rounded-full shrink-0" /> {error}
                     </div>
                   ))}
                   {(!result.errors || result.errors.length === 0) && <p className="text-slate-500 italic">No major formatting issues detected.</p>}
@@ -414,25 +520,22 @@ const Analysis = () => {
                </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ scale: 1.02 }}
-              className="glass-card p-6"
-            >
-               <h4 className="text-lg font-bold mb-4">Interview Probability</h4>
-               <motion.div 
-                 whileHover={{ scale: 1.05 }}
-                 className="flex items-center justify-center p-8 bg-slate-900/50 rounded-2xl"
-               >
-                 <div className="text-6xl font-black gradient-text">
-                   {result.interviewProbability || Math.max(0, result.atsScore - 10)}%
-                 </div>
-               </motion.div>
-               <p className="text-xs text-center text-slate-500 mt-4 uppercase tracking-tighter">Based on target role match</p>
-            </motion.div>
+             <motion.div 
+               initial={{ opacity: 0, x: 20 }}
+               whileInView={{ opacity: 1, x: 0 }}
+               viewport={{ once: true }}
+               transition={{ delay: 0.2 }}
+               whileHover={{ scale: 1.02 }}
+               className="glass-card p-6"
+             >
+                 <h4 className="text-lg font-bold mb-4">Interview Probability</h4>
+                <div className="flex items-center justify-center p-8 bg-slate-900/50 rounded-2xl w-full">
+                  <div className="text-6xl font-black text-[#8b5cf6] text-center w-full block">
+                    {result.interviewProbability || Math.max(0, result.atsScore - 10)}%
+                  </div>
+                </div>
+                <p className="text-xs text-center text-slate-500 mt-4 uppercase tracking-tighter w-full">Based on target role match</p>
+             </motion.div>
           </div>
         </div>
       </div>

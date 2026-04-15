@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileText, Trash2, ArrowRight, Loader2, Calendar, Award, Briefcase, Search, Filter } from 'lucide-react';
 import { resumeAPI } from '../api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const HistoryPage = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,11 +30,11 @@ const HistoryPage = () => {
   };
 
   const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this analysis record?')) return;
+    if (e) e.stopPropagation();
     try {
       await resumeAPI.delete(id);
       setHistory(history.filter(item => item._id !== id));
+      setDeleteModal({ isOpen: false, id: null });
     } catch (err) {
       alert('Delete failed');
     }
@@ -72,7 +74,7 @@ const HistoryPage = () => {
             </p>
           </div>
 
-          <div className="relative group min-w-[350px]">
+          <div className="relative group w-full md:w-auto md:min-w-[350px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-primary-400 transition-colors" />
             <input 
               type="text"
@@ -86,35 +88,35 @@ const HistoryPage = () => {
 
         {/* Info Banner */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           <div className="glass-card p-4 flex items-center gap-4 border-primary-500/20 bg-primary-500/5">
-             <div className="w-12 h-12 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400">
-                <FileText className="w-6 h-6" />
+           <div className="glass-card p-5 flex items-center gap-5 border-primary-500/20 bg-gradient-to-br from-primary-600/10 to-transparent">
+             <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-400 shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+                <FileText className="w-7 h-7" />
              </div>
              <div>
-               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Evaluated</p>
-               <h4 className="text-2xl font-bold">{history.length}</h4>
+               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Evaluated</p>
+               <h4 className="text-3xl font-black text-white">{history.length}</h4>
              </div>
            </div>
            
-           <div className="glass-card p-4 flex items-center gap-4 border-accent-500/20 bg-accent-500/5">
-             <div className="w-12 h-12 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-400">
-                <Award className="w-6 h-6" />
+           <div className="glass-card p-5 flex items-center gap-5 border-accent-500/20 bg-gradient-to-br from-accent-600/10 to-transparent">
+             <div className="w-14 h-14 rounded-xl bg-accent-500/10 flex items-center justify-center text-accent-400 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
+                <Award className="w-7 h-7" />
              </div>
              <div>
-               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Best Score</p>
-               <h4 className="text-2xl font-bold">
+               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Best Score</p>
+               <h4 className="text-3xl font-black text-white">
                  {history.length > 0 ? Math.max(...history.map(h => h.analysis?.atsScore || 0)) : 0}%
                </h4>
              </div>
            </div>
 
-           <div className="glass-card p-4 flex items-center gap-4 border-green-500/20 bg-green-500/5">
-             <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400">
-                <Briefcase className="w-6 h-6" />
+           <div className="glass-card p-5 flex items-center gap-5 border-emerald-500/20 bg-gradient-to-br from-emerald-600/10 to-transparent">
+             <div className="w-14 h-14 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <Briefcase className="w-7 h-7" />
              </div>
              <div>
-               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Avg. ATS Score</p>
-               <h4 className="text-2xl font-bold">
+               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Avg. ATS Score</p>
+               <h4 className="text-3xl font-black text-white">
                  {history.length > 0 ? Math.round(history.reduce((a, b) => a + (b.analysis?.atsScore || 0), 0) / history.length) : 0}%
                </h4>
              </div>
@@ -181,7 +183,7 @@ const HistoryPage = () => {
                   whileTap={{ scale: 0.98 }}
                   key={item._id} 
                   className="glass-card group transition-all cursor-pointer overflow-hidden p-6 flex flex-col gap-4 relative"
-                  onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis } })}
+                  onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis, resume: item } })}
                 >
                   {/* Score Badge */}
                   <div className={`absolute top-0 right-0 px-4 py-1.5 rounded-bl-xl text-sm font-bold ${
@@ -222,7 +224,10 @@ const HistoryPage = () => {
                     <span className="text-xs text-slate-500 uppercase font-bold tracking-widest">View Report</span>
                     <div className="flex items-center gap-3">
                       <button 
-                        onClick={(e) => handleDelete(item._id, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteModal({ isOpen: true, id: item._id });
+                        }}
                         className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                         title="Delete record"
                       >
@@ -239,6 +244,16 @@ const HistoryPage = () => {
           )}
         </div>
       </div>
+      
+      <ConfirmModal 
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, id: null })}
+        onConfirm={() => handleDelete(deleteModal.id)}
+        title="Delete Record"
+        message="This will permanently delete this resume analysis from your history. This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

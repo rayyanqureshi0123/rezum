@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Trash2, ArrowRight, Loader2, Plus, Sparkles, CheckCircle } from 'lucide-react';
 import { resumeAPI } from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Dashboard = () => {
   const [history, setHistory] = useState([]);
@@ -16,6 +17,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
   
   const navigate = useNavigate();
 
@@ -73,7 +75,7 @@ const Dashboard = () => {
         // Reset states
         setSelectedFile(null);
         setJobDescription("");
-        navigate(`/analysis/${data.resume._id}`, { state: { result: data.resume.analysis } });
+        navigate(`/analysis/${data.resume._id}`, { state: { result: data.resume.analysis, resume: data.resume } });
       }
     } catch (err) {
       setError('Analysis failed. Please try again.');
@@ -89,10 +91,10 @@ const Dashboard = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this analysis?')) return;
     try {
       await resumeAPI.delete(id);
       setHistory(history.filter(item => item._id !== id));
+      setDeleteModal({ isOpen: false, id: null });
     } catch (err) {
       setError('Delete failed');
     }
@@ -170,8 +172,10 @@ const Dashboard = () => {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="glass-card w-full max-w-xl p-8 border border-white/10 relative"
+              className="glass-card w-full max-w-xl p-8 md:p-10 border border-white/10 relative shadow-[0_0_80px_rgba(14,165,233,0.15)] bg-[#0B1121] overflow-hidden"
             >
+              {/* Background Accent glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600/10 rounded-full blur-[80px]" />
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-white"
@@ -289,10 +293,10 @@ const Dashboard = () => {
                           <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                      <Tooltip 
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                      <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickMargin={10} />
+                      <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 5', 100]} />
+                      <Tooltip  
                         contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff10', borderRadius: '12px' }}
                         itemStyle={{ color: '#0ea5e9' }}
                         labelFormatter={(label, payload) => {
@@ -341,7 +345,7 @@ const Dashboard = () => {
           {/* Sidebar - History List */}
           <div className="space-y-4">
             <h3 className="text-xl font-bold px-2">Recent Analyses</h3>
-            <div className="space-y-3 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+            <div className="space-y-3 overflow-y-auto max-h-[600px] lg:max-h-[550px] pr-2 custom-scrollbar relative">
               {loading ? (
                 Array(3).fill(0).map((_, i) => (
                   <div key={i} className="glass-card p-4 animate-pulse h-24" />
@@ -365,7 +369,7 @@ const Dashboard = () => {
                     whileTap={{ scale: 0.98 }}
                     key={item._id} 
                     className="glass-card p-4 transition-colors cursor-pointer group"
-                    onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis } })}
+                    onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis, resume: item } })}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex gap-3">
@@ -384,7 +388,7 @@ const Dashboard = () => {
                           {item.analysis?.atsScore || 0}%
                         </div>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item._id }); }}
                           className="p-1.5 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -398,6 +402,16 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      
+      <ConfirmModal 
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, id: null })}
+        onConfirm={() => handleDelete(deleteModal.id)}
+        title="Remove Analysis"
+        message="Are you sure you want to remove this record? This will permanently delete the analysis data."
+        confirmText="Remove"
+        type="danger"
+      />
       </div>
     </>
   );

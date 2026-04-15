@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Analysis from './pages/Analysis';
 import History from './pages/History';
+import CoverLetter from './pages/CoverLetter';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/history" element={<History />} /> 
               <Route path="/analysis/:id" element={<Analysis />} />
+              <Route path="/cover-letter/:id" element={<CoverLetter />} />
             </Route>
           </Routes>
         </div>

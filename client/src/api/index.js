@@ -57,6 +57,8 @@ export const resumeAPI = {
   }),
   getHistory: () => api.get('/resume/history'),
   delete: (id) => api.delete(`/resume/${id}`),
+  rewriteBullet: (bulletPoint, jobTitle) => api.post('/resume/rewrite-bullet', { bulletPoint, jobTitle }),
+  generateCoverLetter: (resumeId) => api.post('/resume/cover-letter', { resumeId }, { timeout: 120000 }),
 };
 
 export default api;
