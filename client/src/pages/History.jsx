@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, Trash2, ArrowRight, Loader2, Calendar, Award, Briefcase, Search, Filter } from 'lucide-react';
+import { FileText, Trash2, ArrowRight, Loader2, Calendar, Award, Briefcase, Search, Filter, Eye } from 'lucide-react';
 import { resumeAPI } from '../api';
 import ConfirmModal from '../components/ConfirmModal';
 

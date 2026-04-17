@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Trash2, ArrowRight, Loader2, Plus, Sparkles, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Trash2, ArrowRight, Loader2, Plus, Sparkles, CheckCircle, Eye } from 'lucide-react';
 import { resumeAPI } from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import ConfirmModal from '../components/ConfirmModal';
