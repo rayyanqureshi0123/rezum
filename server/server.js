@@ -8,6 +8,7 @@ dotenv.config();
 
 import authRoutes from './routes/authRoutes.js';
 import resumeRoutes from './routes/resumeRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 
@@ -32,7 +33,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'DELETE'],
+  methods: ['GET', 'POST', 'DELETE', 'PUT'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -86,6 +87,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/resume/analyze', analysisLimiter);
 app.use('/api/resume', resumeRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── GLOBAL ERROR HANDLER ───
 // Catches unhandled errors so the server never crashes silently

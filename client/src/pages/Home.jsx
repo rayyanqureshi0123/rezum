@@ -12,7 +12,6 @@ const Home = () => {
         <div className="absolute top-0 -z-10 w-full h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(14,165,233,0.15),transparent_70%)]" />
         
 
-
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -44,8 +43,8 @@ const Home = () => {
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-            <Link to="/history" className="btn-secondary py-4 px-10 text-lg flex items-center justify-center gap-3 w-full bg-white/5 border border-white/10 hover:bg-white/10">
-              <History className="w-5 h-5 text-primary-400" />
+            <Link to="/history" className="btn-secondary py-4 px-10 text-lg flex items-center justify-center gap-3 w-full border border-white/10">
+              <History className="w-5 h-5 text-primary-500" />
               View Past Reports
             </Link>
           </motion.div>
@@ -62,7 +61,7 @@ const Home = () => {
             {/* Minimal Mockup Layout */}
             <div className="flex gap-6 h-[400px] md:h-[500px]">
               {/* Sidebar */}
-              <div className="hidden md:flex flex-col gap-4 w-64 border-r border-white/5 pr-6">
+              <div className="hidden md:flex flex-col gap-4 w-64 border-r border-white/5 pr-6 text-left">
                 <div className="h-8 w-24 bg-white/10 rounded-md mb-8"></div>
                 {[1,2,3,4].map(i => (
                   <div key={i} className="h-10 w-full bg-white/5 rounded-lg"></div>
@@ -150,7 +149,7 @@ const Home = () => {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ delay: i * 0.2, duration: 0.5 }}
               whileHover={{ y: -10, scale: 1.02 }}
-              className="glass-card p-8 group border-white/5 cursor-pointer"
+              className="glass-card p-8 group cursor-pointer"
             >
               <div className={`w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${feature.color}`}>
                 <feature.icon className="w-7 h-7" />

@@ -68,8 +68,8 @@ const CoverLetter = () => {
                 </div>
              ) : (
                 <div className="w-full">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
+                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                     <div>
                       <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
                         <FileText className="w-8 h-8 text-accent-400" /> Professional Cover Letter
                       </h1>
@@ -89,7 +89,7 @@ const CoverLetter = () => {
                     </motion.button>
                   </div>
 
-                  <div className="bg-slate-900/50 rounded-2xl p-8 md:p-10 border border-white/5 shadow-inner leading-relaxed overflow-y-auto">
+                   <div className="bg-slate-900/50 rounded-2xl p-8 md:p-10 border border-white/5 shadow-inner leading-relaxed overflow-y-auto">
                     {coverLetter?.coverLetter?.split('\n\n').map((para, i) => (
                       <p key={i} className="text-slate-300 mb-6 last:mb-0 md:text-lg">
                         {para}

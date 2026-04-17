@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { resumeAPI } from '../api';
 import jsPDF from 'jspdf';
+import confetti from 'canvas-confetti';
 
 ChartJS.register(
   RadialLinearScale, 
@@ -43,6 +44,35 @@ const SectionHeader = ({ icon: Icon, title, subtitle, colorClass = "text-primary
   </div>
 );
 
+const AnimatedCounter = ({ value, duration = 2000 }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = Math.floor(Number(value));
+    if (end === 0) {
+      setCount(0);
+      return;
+    }
+
+    const totalMiliseconds = duration;
+    const incrementTime = totalMiliseconds / end;
+
+    const timer = setInterval(() => {
+      start += 1;
+      setCount(start);
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value, duration]);
+
+  return <span>{count}</span>;
+};
+
 const Analysis = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -54,6 +84,28 @@ const Analysis = () => {
 
   const [rewritingIdx, setRewritingIdx] = useState(null);
   const [rewriteResults, setRewriteResults] = useState({});
+
+  useEffect(() => {
+    if (result?.atsScore >= 85) {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+      }, 250);
+    }
+  }, [result]);
 
   useEffect(() => {
     if (!result && id) {
@@ -241,7 +293,7 @@ const Analysis = () => {
   const score = result.atsScore || 0;
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
+    <div className="min-h-screen pt-32 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
       {/* Abstract Background Glows */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent-600/10 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -300,14 +352,16 @@ const Analysis = () => {
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider">
                            <ShieldCheck className="w-3.5 h-3.5" /> High Precision Analysis
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-bold leading-tight">Your Resume Is <span className="gradient-text">{score >= 80 ? 'Exceptional' : score >= 60 ? 'Strong' : 'Improving'}</span></h2>
+                        <h2 className="text-4xl md:text-5xl font-bold leading-tight text-white">Your Resume Is <span className="gradient-text">{score >= 80 ? 'Exceptional' : score >= 60 ? 'Strong' : 'Improving'}</span></h2>
                         <p className="text-slate-400 text-lg leading-relaxed">
                            {result.overallAnalysis || "We've meticulously analyzed your resume against modern ATS algorithms. Here's your path to landing more interviews."}
                         </p>
                     </div>
                     {/* Score Bubble */}
                     <div className="flex flex-col items-center md:items-end shrink-0">
-                        <div className="text-[120px] font-black leading-none gradient-text opacity-90 drop-shadow-2xl">{score}</div>
+                        <div className="text-[120px] font-black leading-none gradient-text opacity-90 drop-shadow-2xl">
+                          <AnimatedCounter value={score} />
+                        </div>
                         <div className="text-xs uppercase tracking-[0.4em] font-bold text-slate-500 -mt-2">ATS Score / 100</div>
                     </div>
                 </div>
@@ -316,7 +370,7 @@ const Analysis = () => {
                 <div className="space-y-3">
                     <div className="flex justify-between items-end px-1">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Readiness Level</span>
-                        <span className="text-sm font-black text-white">{score}%</span>
+                        <span className="text-sm font-black text-white"><AnimatedCounter value={score} />%</span>
                     </div>
                     <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 p-1">
                         <motion.div 
@@ -345,7 +399,9 @@ const Analysis = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-start">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-primary-500/30 transition-all group h-full flex flex-col">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-primary-400">JD Match</p>
-                    <span className="text-2xl font-bold text-primary-400">{result.jdMatchScore || 'N/A'}%</span>
+                    <span className="text-2xl font-bold text-primary-400">
+                      <AnimatedCounter value={result.jdMatchScore || 0} />%
+                    </span>
                   </div>
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-accent-500/30 transition-all group h-full flex flex-col">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-accent-400">Interview Prob.</p>
@@ -353,7 +409,7 @@ const Analysis = () => {
                   </div>
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-red-500/30 transition-all group h-full flex flex-col">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-red-400">Missing Keys</p>
-                    <span className="text-2xl font-bold text-red-400">{result.keywordGap?.filter(k => !k.found).length || 0}</span>
+                    <span className="text-2xl font-bold text-red-500">{result.keywordGap?.filter(k => !k.found).length || 0}</span>
                     {result.keywordGap?.filter(k => !k.found).length > 0 && (
                       <p className="text-[10px] text-slate-400 mt-1.5 leading-snug line-clamp-2 opacity-80 group-hover:opacity-100 transition-opacity">
                         {result.keywordGap.filter(k => !k.found).map(k => k.keyword).join(', ')}
@@ -485,7 +541,7 @@ const Analysis = () => {
                   </div>
 
                   <div>
-                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <Target className="w-3.5 h-3.5" /> Key Keyword Gaps
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -496,6 +552,47 @@ const Analysis = () => {
                     ))}
                     </div>
                   </div>
+
+                  {/* New Quantification Meter */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex justify-between items-end px-1">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <BarChart3 className="w-3.5 h-3.5" /> Quantification
+                      </p>
+                      <span className="text-xs font-black text-white">
+                        <AnimatedCounter value={result.quantificationScore || 0} />%
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${result.quantificationScore || 0}%` }}
+                        transition={{ duration: 1.5, delay: 0.5 }}
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Percentage of bullet points with measurable impact (%, $, #).
+                    </p>
+                  </div>
+
+                  {/* New Verb Analysis */}
+                  {result.verbAnalysis && (
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <Zap className="w-3.5 h-3.5 text-yellow-500" /> Action Strength
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.verbAnalysis.weakVerbs?.map((v, i) => (
+                          <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/5 border border-red-500/10">
+                            <span className="text-[10px] font-bold text-red-400 line-through opacity-60">{v}</span>
+                            <ArrowRight className="w-2.5 h-2.5 text-slate-600" />
+                            <span className="text-[10px] font-bold text-emerald-400">{result.verbAnalysis.strongAlternatives?.[i]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="pt-4 p-5 rounded-3xl bg-gradient-to-br from-primary-500/10 via-transparent to-transparent border border-white/5">
                     <div className="flex items-center gap-2 mb-2 text-primary-400">

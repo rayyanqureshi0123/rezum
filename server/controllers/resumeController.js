@@ -40,24 +40,33 @@ export const analyzeResume = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are a Surgical Tech Recruiter and ATS Optimization Script. You do not give generic advice. You analyze resume text with extreme precision, looking for missing quantifiable statistics (%, $, months), weak action verbs, and skill mismatches. You are brutally honest. If a resume is bad, give it a bad score. Your goal is to find the deep gaps that human recruiters notice but generic AI misses."
+          content: "You are a Highly Cynical Senior Executive Recruiter and ATS Auditor for a Fortune 500 company. You have seen thousands of 'good' resumes and you are only impressed by the top 1%. You are extremely strict and look for every reason to disqualify or de-rank a candidate."
         },
         {
           role: "user",
           content: `
-            DIAGNOSTIC TASK: Run a deep-tissue diagnostic on the following resume text. 
-            Avoid all boilerplate phrases like 'showcases a strong foundation' or 'solid background'. 
-            If you catch yourself being generic, DELETE and start over.
-
-            SPECIFIC REQUIREMENTS:
-            1. **No-Fluff Analysis**: Provide a 2-paragraph surgical breakdown. Paragraph 1: Analyze the specific technical depth demonstrated. Paragraph 2: Critique the lack of impact or results in their specific roles.
-            2. **Direct Bullet Point Fixes**: Identify 3 specific bullets from THIS resume and explain exactly how to add numbers or technical proof to them.
-            3. **Keyword Gap**: Compare strictly. If they mention 'React' but not 'Redux' which is in the JD, flag it.
-            4. **Career Trajectory**: Only suggest roles that are the logical NEXT step for THIS specific candidate's seniority level.
-            5. **ATS Scoring**: Be harsh. Penalize for: generic bullet points, lack of data, and missing core role requirements.
+            ULTRA-STRICT ATS AUDIT: Evaluate this resume with total professional skepticism.
             
-            FORMATTING CONTEXT: Common contact icons (Phone/Email symbols) are GOOD. Do not flag standard UTF-8 symbols as errors.
+            SCORING MANDATES (CRITICAL):
+            - **85-100 (ELITE ONLY)**: Reserved ONLY for resumes with perfect formatting AND high-impact, quantified metrics (%, $, months) in EVERY individual bullet point. If even ONE job block is generic, it CANNOT be Elite.
+            - **70-84 (STRONG)**: High-quality technical skills and standard format, but lacks consistent data-driven results. 
+            - **50-69 (AVERAGE)**: Meaningful experience but written with generic 'task-based' bullets (e.g., 'Responsible for...', 'Managed...'). 
+            - **BELOW 50 (REJECT)**: Any major formatting error (tables, columns, images) OR purely generic text without technical depth.
 
+            STRICT PENALTIES:
+            - Deduct 20 points if no specific numbers (%, $, #) are found in the last 2 roles.
+            - Deduct 15 points if the summary is 'Objective-based' instead of 'Result-based'.
+            - Deduct 30 points if it uses a multi-column layout (ATS-killer).
+            - Deduct 10 points for every section header that is non-standard.
+
+            NEW ANALYTICS (MANDATORY):
+            - **quantificationScore**: Calculate what % of bullet points contain at least one piece of measurable data (numbers, currency, or percentages). 0-100.
+            - **verbAnalysis**: Identify up to 3 'weak' or 'passive' verbs (e.g., 'Helped', 'Handled', 'Managed') and provide 'strong' or 'active' alternatives (e.g., 'Spearheaded', 'Orchestrated', 'Executed').
+
+            RUBRIC:
+            1. **atsScore**: (0-100) Be cold. Do not give a 'participation' score. If a resume is just 'okay', it's a 60, not an 80.
+            2. **interviewProbability**: (0-100) Reflect the truth: in a pile of 500 resumes, would this specific one realistically get a call?
+            
             Return strictly as a JSON object with this structure:
             {
               "atsScore": number,
@@ -74,12 +83,17 @@ export const analyzeResume = async (req, res) => {
               "missingSections": ["string"],
               "errors": ["string"],
               "skills": { "technical": ["string"], "soft": ["string"] },
+              "quantificationScore": number, 
+              "verbAnalysis": {
+                "weakVerbs": ["string"],
+                "strongAlternatives": ["string"]
+              },
               "contentSuggestions": ["string"],
               "jobRoleSuggestions": ["string"]
               ${jobDescription ? ',\n              "jdMatchScore": number,\n              "jdInsights": ["string"],\n              "keywordGap": [{ "keyword": "string", "found": true/false }]' : ''}
             }
 
-            Resume Text for Deep Analysis:
+            Resume Text:
             ---
             ${resumeText}
             ---
@@ -88,12 +102,17 @@ export const analyzeResume = async (req, res) => {
         },
       ],
       model: "llama-3.3-70b-versatile",
-      temperature: 0.5, 
+      temperature: 0.4, 
       response_format: { type: "json_object" },
     });
 
     const aiResponse = completion.choices[0].message.content;
     const analysisResult = JSON.parse(aiResponse);
+
+    // Guardrail: Fix rogue decimal probabilities
+    if (analysisResult.interviewProbability > 0 && analysisResult.interviewProbability < 1) {
+      analysisResult.interviewProbability = Math.round(analysisResult.interviewProbability * 100);
+    }
 
     const originalName = req.file.originalname;
 

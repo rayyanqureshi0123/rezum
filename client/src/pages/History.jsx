@@ -57,7 +57,7 @@ const HistoryPage = () => {
   });
 
   return (
-    <div className="min-h-screen pt-28 pb-12 px-6 bg-[#030712]">
+    <div className="min-h-screen pt-28 pb-12 px-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -93,34 +93,34 @@ const HistoryPage = () => {
                 <FileText className="w-7 h-7" />
              </div>
              <div>
-               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Evaluated</p>
-               <h4 className="text-3xl font-black text-white">{history.length}</h4>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Evaluated</p>
+                <h4 className="text-3xl font-black">{history.length}</h4>
              </div>
            </div>
            
            <div className="glass-card p-5 flex items-center gap-5 border-accent-500/20 bg-gradient-to-br from-accent-600/10 to-transparent">
-             <div className="w-14 h-14 rounded-xl bg-accent-500/10 flex items-center justify-center text-accent-400 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-                <Award className="w-7 h-7" />
-             </div>
-             <div>
-               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Best Score</p>
-               <h4 className="text-3xl font-black text-white">
-                 {history.length > 0 ? Math.max(...history.map(h => h.analysis?.atsScore || 0)) : 0}%
-               </h4>
-             </div>
-           </div>
+              <div className="w-14 h-14 rounded-xl bg-accent-500/10 flex items-center justify-center text-accent-400 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
+                 <Award className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Best Score</p>
+                <h4 className="text-3xl font-black">
+                  {history.length > 0 ? Math.max(...history.map(h => h.analysis?.atsScore || 0)) : 0}%
+                </h4>
+              </div>
+            </div>
 
-           <div className="glass-card p-5 flex items-center gap-5 border-emerald-500/20 bg-gradient-to-br from-emerald-600/10 to-transparent">
-             <div className="w-14 h-14 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                <Briefcase className="w-7 h-7" />
-             </div>
-             <div>
-               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Avg. ATS Score</p>
-               <h4 className="text-3xl font-black text-white">
-                 {history.length > 0 ? Math.round(history.reduce((a, b) => a + (b.analysis?.atsScore || 0), 0) / history.length) : 0}%
-               </h4>
-             </div>
-           </div>
+            <div className="glass-card p-5 flex items-center gap-5 border-emerald-500/20 bg-gradient-to-br from-emerald-600/10 to-transparent">
+              <div className="w-14 h-14 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                 <Briefcase className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Avg. ATS Score</p>
+                <h4 className="text-3xl font-black">
+                  {history.length > 0 ? Math.round(history.reduce((a, b) => a + (b.analysis?.atsScore || 0), 0) / history.length) : 0}%
+                </h4>
+              </div>
+            </div>
         </div>
 
         {/* Error State */}
@@ -179,9 +179,9 @@ const HistoryPage = () => {
                   whileHover={{ 
                     y: -2,
                     zIndex: 50,
-                    backgroundColor: "rgba(30, 41, 59, 1)",
+                    backgroundColor: "rgba(30, 41, 59, 0.5)",
                     borderColor: "rgba(14, 165, 233, 0.5)",
-                    boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.8)",
+                    boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.5)",
                     transition: { delay: 0, duration: 0.2 }
                   }}
                   key={item._id} 
@@ -201,7 +201,7 @@ const HistoryPage = () => {
                   </button>
 
                   {/* Score Badge */}
-                  <div className={`absolute top-0 left-0 px-4 py-1.5 rounded-br-xl text-[10px] font-black uppercase tracking-widest ${
+                  <div className={`absolute top-0 left-0 px-4 py-1.5 rounded-br-xl text-[10px] font-black uppercase tracking-widest transition-colors ${
                     (item.analysis?.atsScore || 0) >= 80 ? 'bg-green-500/20 text-green-400' : 
                     (item.analysis?.atsScore || 0) >= 60 ? 'bg-yellow-500/20 text-yellow-400' : 
                     'bg-red-500/20 text-red-400'
