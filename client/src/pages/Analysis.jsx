@@ -318,19 +318,20 @@ const Analysis = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-wrap gap-3"
           >
-             {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
-                <a 
-                  href={resumeData.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400"
-                >
-                  <Eye className="w-4 h-4" /> View Resume
-                </a>
+              {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
+                <div className="flex gap-2">
+                  <a 
+                    href={resumeData.fileUrl.replace('/upload/', '/upload/fl_attachment/')}
+                    download
+                    className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400"
+                  >
+                    <Download className="w-4 h-4" /> Download Resume
+                  </a>
+                  <button onClick={handleExport} className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold">
+                    <Download className="w-4 h-4" /> Export Report
+                  </button>
+                </div>
               )}
-            <button onClick={handleExport} className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold">
-              <Download className="w-4 h-4" /> Export Report
-            </button>
 
           </motion.div>
         </div>
