@@ -121,6 +121,7 @@ export const analyzeResume = async (req, res) => {
       fileUrl: fileUrl,
       publicId: publicId,
       fileName: originalName,
+      resumeText: resumeText,
       jobDescription: jobDescription || null,
       analysis: analysisResult,
     });

@@ -292,6 +292,81 @@ const Analysis = () => {
 
   const score = result.atsScore || 0;
 
+  const handleDownloadCV = () => {
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      let yPos = 20;
+      const margin = 20;
+      const maxTextWidth = pageWidth - margin * 2;
+
+      // Header
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(15, 23, 42); // slate-900
+      pdf.text(user?.name || "Resume", margin, yPos);
+      yPos += 8;
+
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(71, 85, 105); // slate-600
+      pdf.text(user?.email || "", margin, yPos);
+      yPos += 15;
+
+      // Summary / Objective Section
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(15, 23, 42);
+      pdf.text("PROFESSIONAL SUMMARY", margin, yPos);
+      yPos += 6;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(51, 65, 85);
+      const summaryLines = pdf.splitTextToSize(result.overallAnalysis || "", maxTextWidth);
+      pdf.text(summaryLines, margin, yPos);
+      yPos += (summaryLines.length * 5) + 10;
+
+      // Skills Section
+      const allSkills = [...(result.skills?.technical || []), ...(result.skills?.soft || [])];
+      if (allSkills.length > 0) {
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text("CORE COMPETENCIES", margin, yPos);
+        yPos += 6;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const skillText = allSkills.join("  •  ");
+        const skillLines = pdf.splitTextToSize(skillText, maxTextWidth);
+        pdf.text(skillLines, margin, yPos);
+        yPos += (skillLines.length * 5) + 10;
+      }
+
+      // Experience / Improvements Section
+      if (result.contentSuggestions && result.contentSuggestions.length > 0) {
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text("OPTIMIZED CONTRIBUTIONS & IMPACT", margin, yPos);
+        yPos += 8;
+        
+        result.contentSuggestions.forEach((suggestion) => {
+          if (yPos > 270) { pdf.addPage(); yPos = 20; }
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text("•", margin, yPos);
+          pdf.setFont('helvetica', 'normal');
+          const lines = pdf.splitTextToSize(suggestion, maxTextWidth - 5);
+          pdf.text(lines, margin + 5, yPos);
+          yPos += (lines.length * 5) + 4;
+        });
+      }
+
+      pdf.save(`${user?.name || 'My'}-Optimized-CV.pdf`);
+    } catch (error) {
+      console.error('CV Download failed:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-40 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
       {/* Abstract Background Glows */}
@@ -319,16 +394,19 @@ const Analysis = () => {
             className="flex flex-wrap gap-3"
           >
               {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <a 
                     href={resumeData.fileUrl.replace('/upload/', '/upload/fl_attachment/')}
                     download
                     className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400"
                   >
-                    <Download className="w-4 h-4" /> Download Resume
+                    <Download className="w-4 h-4" /> Download Original
                   </a>
+                  <button onClick={handleDownloadCV} className="btn-primary flex items-center gap-2 py-2 px-5 font-bold shadow-lg shadow-primary-500/20">
+                    <Wand2 className="w-4 h-4" /> Download Optimized CV
+                  </button>
                   <button onClick={handleExport} className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold">
-                    <Download className="w-4 h-4" /> Export Report
+                    <FileText className="w-4 h-4" /> Export AI Report
                   </button>
                 </div>
               )}

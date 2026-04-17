@@ -5,6 +5,7 @@ const resumeSchema = new mongoose.Schema({
   fileUrl: { type: String, required: true },
   publicId: { type: String },
   fileName: { type: String },
+  resumeText: { type: String },
   jobDescription: { type: String },
   analysis: { type: Object, required: true },
 }, { timestamps: true });
