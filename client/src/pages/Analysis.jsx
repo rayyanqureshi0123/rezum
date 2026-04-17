@@ -292,6 +292,32 @@ const Analysis = () => {
 
   const score = result.atsScore || 0;
 
+  return (
+    <div className="min-h-screen pt-40 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
+      {/* Abstract Background Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent-600/10 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        {/* Header Actions */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <motion.button 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-all group w-fit"
+          >
+            <div className="p-2 rounded-lg bg-white/5 border border-white/5 group-hover:border-white/20 transition-all">
+              <ChevronLeft className="w-4 h-4" />
+            </div>
+            <span className="font-medium">Back to Portfolio</span>
+          </motion.button>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-wrap gap-3"
+          >
               {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
                 <div className="flex flex-wrap gap-2">
                   <a 
