@@ -292,107 +292,6 @@ const Analysis = () => {
 
   const score = result.atsScore || 0;
 
-  const handleDownloadCV = () => {
-    try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210;
-      let yPos = 20;
-      const margin = 20;
-      const maxTextWidth = pageWidth - margin * 2;
-
-      // Header
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(15, 23, 42); // slate-900
-      pdf.text(user?.name || "Resume", margin, yPos);
-      yPos += 8;
-
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(71, 85, 105); // slate-600
-      pdf.text(user?.email || "", margin, yPos);
-      yPos += 15;
-
-      // Summary / Objective Section
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(15, 23, 42);
-      pdf.text("PROFESSIONAL SUMMARY", margin, yPos);
-      yPos += 6;
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(51, 65, 85);
-      const summaryLines = pdf.splitTextToSize(result.overallAnalysis || "", maxTextWidth);
-      pdf.text(summaryLines, margin, yPos);
-      yPos += (summaryLines.length * 5) + 10;
-
-      // Skills Section
-      const allSkills = [...(result.skills?.technical || []), ...(result.skills?.soft || [])];
-      if (allSkills.length > 0) {
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text("CORE COMPETENCIES", margin, yPos);
-        yPos += 6;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        const skillText = allSkills.join("  •  ");
-        const skillLines = pdf.splitTextToSize(skillText, maxTextWidth);
-        pdf.text(skillLines, margin, yPos);
-        yPos += (skillLines.length * 5) + 10;
-      }
-
-      // Experience / Improvements Section
-      if (result.contentSuggestions && result.contentSuggestions.length > 0) {
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text("OPTIMIZED CONTRIBUTIONS & IMPACT", margin, yPos);
-        yPos += 8;
-        
-        result.contentSuggestions.forEach((suggestion) => {
-          if (yPos > 270) { pdf.addPage(); yPos = 20; }
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text("•", margin, yPos);
-          pdf.setFont('helvetica', 'normal');
-          const lines = pdf.splitTextToSize(suggestion, maxTextWidth - 5);
-          pdf.text(lines, margin + 5, yPos);
-          yPos += (lines.length * 5) + 4;
-        });
-      }
-
-      pdf.save(`${user?.name || 'My'}-Optimized-CV.pdf`);
-    } catch (error) {
-      console.error('CV Download failed:', error);
-    }
-  };
-
-  return (
-    <div className="min-h-screen pt-40 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
-      {/* Abstract Background Glows */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent-600/10 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
-
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Header Actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <motion.button 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-all group w-fit"
-          >
-            <div className="p-2 rounded-lg bg-white/5 border border-white/5 group-hover:border-white/20 transition-all">
-              <ChevronLeft className="w-4 h-4" />
-            </div>
-            <span className="font-medium">Back to Portfolio</span>
-          </motion.button>
-
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-wrap gap-3"
-          >
               {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
                 <div className="flex flex-wrap gap-2">
                   <a 
@@ -400,11 +299,8 @@ const Analysis = () => {
                     download
                     className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400"
                   >
-                    <Download className="w-4 h-4" /> Download Original
+                    <Download className="w-4 h-4" /> Download Resume
                   </a>
-                  <button onClick={handleDownloadCV} className="btn-primary flex items-center gap-2 py-2 px-5 font-bold shadow-lg shadow-primary-500/20">
-                    <Wand2 className="w-4 h-4" /> Download Optimized CV
-                  </button>
                   <button onClick={handleExport} className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold">
                     <FileText className="w-4 h-4" /> Export AI Report
                   </button>
