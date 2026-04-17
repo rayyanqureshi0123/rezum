@@ -188,17 +188,27 @@ const HistoryPage = () => {
                   className="glass-card group transition-colors duration-200 cursor-pointer overflow-hidden p-6 flex flex-col gap-4 relative"
                   onClick={() => navigate(`/analysis/${item._id}`, { state: { result: item.analysis, resume: item } })}
                 >
-                  {/* Delete Button - Only visible on hover */}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteModal({ isOpen: true, id: item._id });
-                    }}
-                    className="absolute top-4 right-4 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-30"
-                    title="Delete record"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-30">
+                    {item.fileUrl && (
+                      <a 
+                        href={item.fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 text-slate-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title="View PDF"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item._id }); }}
+                      className="p-1.5 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
 
                   {/* Score Badge */}
                   <div className={`absolute top-0 left-0 px-4 py-1.5 rounded-br-xl text-[10px] font-black uppercase tracking-widest transition-colors ${

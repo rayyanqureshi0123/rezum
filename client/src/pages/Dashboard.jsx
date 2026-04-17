@@ -383,13 +383,26 @@ const Dashboard = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`text-sm font-bold ${item.analysis?.atsScore >= 80 ? 'text-green-400' : item.analysis?.atsScore >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <div className="flex items-center gap-1">
+                        <div className={`text-sm font-bold mr-1 ${item.analysis?.atsScore >= 80 ? 'text-green-400' : item.analysis?.atsScore >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
                           {item.analysis?.atsScore || 0}%
                         </div>
+                        {item.fileUrl && (
+                          <a 
+                            href={item.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 text-slate-600 hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
+                            title="View PDF"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </a>
+                        )}
                         <button 
                           onClick={(e) => { e.stopPropagation(); setDeleteModal({ isOpen: true, id: item._id }); }}
                           className="p-1.5 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Remove"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
