@@ -289,6 +289,23 @@ const Analysis = () => {
       </div>
     );
   }
+  const handleDownloadOriginal = async () => {
+    try {
+      const response = await fetch(resumeData.fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = (resumeData.fileName || 'Original_Resume').replace(/\.[^/.]+$/, "") + '.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed', error);
+      window.open(resumeData.fileUrl, '_blank');
+    }
+  };
 
   const score = result.atsScore || 0;
 
@@ -320,12 +337,12 @@ const Analysis = () => {
           >
               {resumeData?.fileUrl && resumeData.fileUrl !== "deleted-for-privacy" && (
                 <div className="flex flex-wrap gap-2">
-                  <a 
-                    href={resumeData.fileUrl.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent('Original_Resume.pdf')}/`)}
+                  <button 
+                    onClick={handleDownloadOriginal}
                     className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400"
                   >
                     <Download className="w-4 h-4" /> Download Resume
-                  </a>
+                  </button>
                   <button onClick={handleExport} className="btn-secondary flex items-center gap-2 py-2 px-5 font-bold">
                     <FileText className="w-4 h-4" /> Export AI Report
                   </button>
