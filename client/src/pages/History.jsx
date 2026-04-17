@@ -57,7 +57,7 @@ const HistoryPage = () => {
   });
 
   return (
-    <div className="min-h-screen pt-28 pb-12 px-6">
+    <div className="min-h-screen pt-36 pb-12 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -65,7 +65,7 @@ const HistoryPage = () => {
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-4xl md:text-5xl font-extrabold"
+              className="text-3xl md:text-5xl font-extrabold leading-tight"
             >
               Analysis <span className="gradient-text">History</span>
             </motion.h1>

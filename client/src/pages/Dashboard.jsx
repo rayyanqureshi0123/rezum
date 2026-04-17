@@ -227,7 +227,7 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen pt-28 pb-12 px-6">
+      <div className="min-h-screen pt-36 pb-12 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -235,7 +235,7 @@ const Dashboard = () => {
             <motion.h1 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-4xl md:text-5xl font-extrabold"
+              className="text-3xl md:text-5xl font-extrabold leading-tight"
             >
               Your <span className="gradient-text">Resume Portfolio</span>
             </motion.h1>
@@ -248,7 +248,7 @@ const Dashboard = () => {
             whileHover={{ scale: 1.05 }} 
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsModalOpen(true)}
-            className={`btn-primary flex items-center gap-2 pr-4 pl-5 ${uploading ? 'pointer-events-none opacity-70' : ''}`}
+            className={`btn-primary w-full md:w-auto flex items-center justify-center gap-2 pr-4 pl-5 ${uploading ? 'pointer-events-none opacity-70' : ''}`}
           >
             {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-6 h-6" />}
             {uploading ? 'Analyzing...' : 'Analyze New Resume'}
@@ -273,12 +273,12 @@ const Dashboard = () => {
               transition={{ delay: 0.2 }}
               className="glass-card p-6 h-[400px] relative overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                  <h3 className="text-xl font-bold">Score Progression</h3>
+                  <h3 className="text-xl font-bold leading-tight">Score Progression</h3>
                   <p className="text-sm text-slate-500">Visualization of your resume scores over time</p>
                 </div>
-                <div className="bg-primary-500/10 text-primary-400 px-3 py-1 rounded-full text-xs font-bold border border-primary-500/20">
+                <div className="bg-primary-500/10 text-primary-400 px-4 py-2 sm:py-1 rounded-xl sm:rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider border border-primary-500/20 self-start sm:self-center whitespace-nowrap">
                   Total Analyses: {history.length}
                 </div>
               </div>
