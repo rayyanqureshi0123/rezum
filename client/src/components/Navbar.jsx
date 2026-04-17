@@ -109,7 +109,7 @@ const Navbar = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="absolute top-20 left-6 right-6 md:hidden glass-morphism rounded-3xl p-6 shadow-2xl border border-white/10 overflow-hidden"
+              className="absolute top-20 left-4 right-4 md:hidden bg-[#030712] rounded-3xl p-5 shadow-2xl border border-white/5 overflow-hidden z-[110]"
             >
               <div className="space-y-4">
                 <div className="flex items-center gap-4 pb-4 border-b border-white/5 sm:hidden">

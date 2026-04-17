@@ -293,7 +293,7 @@ const Analysis = () => {
   const score = result.atsScore || 0;
 
   return (
-    <div className="min-h-screen pt-32 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
+    <div className="min-h-screen pt-40 pb-20 bg-[#030712] relative overflow-hidden selection:bg-primary-500/30">
       {/* Abstract Background Glows */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-600/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent-600/10 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
