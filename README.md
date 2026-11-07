@@ -1,120 +1,79 @@
-Rezum — AI Resume Analyzer
+# Rezum — AI Resume Analyzer
 
-An AI-powered resume analyzer built with the MERN stack that evaluates resumes using Google Gemini AI and Groq. Upload a PDF resume to receive ATS scoring, skill-gap analysis, keyword optimization, and personalized suggestions through an intuitive dashboard.
+An intelligent, MERN-stack resume analyzer powered by Google Generative AI and Groq. Rezum evaluates, scores, and provides actionable feedback on resumes to help candidates land their dream jobs.
 
----
+<div align="center">
+  <a href="https://rezum-mu.vercel.app"><strong>🌐 Live Demo (Vercel)</strong></a> | 
+  <a href="https://rezum-backend.onrender.com"><strong>⚙️ Backend API (Render)</strong></a>
+</div>
 
-✨ Features
+<br />
 
-- AI Resume Analysis — Analyze resumes using Google Gemini AI and Groq
-- ATS Score & Feedback — Generate ATS scores with detailed improvement suggestions
-- PDF Processing — Extract and analyze resume content from PDF files
-- Skill Gap Detection — Identify missing skills based on job readiness
-- Keyword Optimization — Improve ATS keyword matching
-- Interactive Dashboard — Visualize resume insights with charts
-- Authentication — Secure Email/Password and Google OAuth login
-- Cloud Storage — Store uploaded resumes using Cloudinary
-- **Modern UI — Responsive interface built with React, TailwindCSS, and Framer Motion
+## ✨ Features
+- **Advanced AI Analysis** — Parse and evaluate resumes using Google Generative AI and Groq for ATS scoring and skill gap analysis
+- **Interactive Data Visualization** — Visual breakdowns of resume metrics and keyword matching using Recharts and Chart.js
+- **Secure Authentication System** — Traditional Email/Password Auth alongside Google OAuth integration
+- **Enterprise-Grade Rate Limiting** — Dedicated limiters for general APIs, auth routes, and expensive AI API calls
+- **Robust Document Processing** — Extract text directly from PDFs and generate downloadable reports
+- **Modern, Fluid UI** — Beautifully styled with TailwindCSS and animated using Framer Motion
 
----
-
-🛠 Tech Stack
-
+## 🛠️ Tech Stack
 | Layer | Technology |
-|-------|------------|
-| Frontend | React 19, Vite, TailwindCSS, Framer Motion, Recharts, Chart.js |
-| Backend | Node.js, Express.js, Google Gemini AI, Groq SDK |
-| Database | MongoDB, Mongoose |
-| Authentication | JWT, Google OAuth, bcryptjs |
-| File Storage | Cloudinary, Multer |
-| Security | Helmet, Express Rate Limit |
+|---|---|
+| **Frontend** | React 19, Vite, TailwindCSS, Framer Motion, Recharts |
+| **Backend** | Node.js, Express.js, Google Generative AI, Groq SDK |
+| **Database** | MongoDB (Mongoose) |
+| **Storage/Upload** | Cloudinary, Multer |
+| **Security** | Helmet, express-rate-limit, JWT, bcryptjs |
 
----
+## 🚀 Quick Start
 
- 🚀 Quick Start
-
-Prerequisites
-
+### Prerequisites
 - Node.js 18+
-- MongoDB (Local or Atlas)
-- Google Gemini API Key
-- Groq API Key
-- Cloudinary Account
+- MongoDB (local instance or Atlas URI)
+- API Keys for Google Gemini, Groq, and Cloudinary
 
- Backend
-
+### Backend
 ```bash
 cd server
 npm install
-cp .env.example .env
+cp .env.example .env    # Fill in your keys
 npm run dev
-
 ```
 
 ### Frontend
-
 ```bash
 cd client
 npm install
 npm run dev
 ```
 
----
-
 ## 📁 Project Structure
-
 ```text
-Rezum/
-├── client/
-│   ├── public/
-│   └── src/
-│       ├── assets/
-│       ├── components/
-│       ├── context/
-│       ├── hooks/
-│       ├── pages/
-│       ├── services/
-│       └── App.jsx
-│
 ├── server/
-│   ├── config/
-│   ├── controllers/
-│   ├── middleware/
-│   ├── models/
-│   ├── routes/
-│   ├── utils/
-│   └── server.js
-│
-├── README.md
-└── package.json
+│   ├── controllers/        # Route logic (Auth, Resume processing)
+│   ├── middleware/         # Auth, file upload (Multer), Rate limiters
+│   ├── models/             # Mongoose schemas (User, Resume)
+│   ├── routes/             # REST API endpoint definitions
+│   └── server.js           # Express app assembly
+└── client/
+    ├── src/
+    │   ├── components/     # Reusable UI components & charts
+    │   ├── pages/          # Application views (Dashboard, Analysis)
+    │   └── ...
 ```
-
----
 
 ## 🔒 Environment Variables
-
-Create a `.env` file inside the **server** directory.
-
-```env
-PORT=
-
-MONGO_URI=
-
-JWT_SECRET=
-
-GOOGLE_GEMINI_API_KEY=
-
-GROQ_API_KEY=
-
-CLOUDINARY_CLOUD_NAME=
-
-CLOUDINARY_API_KEY=
-
-CLOUDINARY_API_SECRET=
-```
-
----
+**Required Keys (Backend):**
+- `MONGO_URI`
+- `JWT_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GROQ_API_KEY`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `CLIENT_URL`
 
 ## 📄 License
-
-MIT License
+MIT

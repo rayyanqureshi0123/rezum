@@ -12,14 +12,17 @@ import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 
-// ─── SECURITY: Helmet sets 11 HTTP security headers in one line ───
-// Protects against XSS, Clickjacking, MIME-sniffing, and more
-app.use(helmet());
+// ─── SECURITY: Helmet sets HTTP security headers ───
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginEmbedderPolicy: false,
+}));
 
 // ─── SECURITY: Tightened CORS ───
 // Only allows requests from your frontend, blocks everything else
 const allowedOrigins = [
   'http://localhost:5173',
+  'https://rezum-mu.vercel.app',
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
