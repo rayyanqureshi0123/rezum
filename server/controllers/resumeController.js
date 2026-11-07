@@ -40,32 +40,32 @@ export const analyzeResume = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are a Highly Cynical Senior Executive Recruiter and ATS Auditor for a Fortune 500 company. You have seen thousands of 'good' resumes and you are only impressed by the top 1%. You are extremely strict and look for every reason to disqualify or de-rank a candidate."
+          content: "You are an experienced, balanced, and constructive ATS Auditor and Senior Technical Recruiter. You evaluate resumes fairly based on industry ATS standards, recognizing strong technical skills and project experience while offering clear, practical guidance for improvement."
         },
         {
           role: "user",
           content: `
-            ULTRA-STRICT ATS AUDIT: Evaluate this resume with total professional skepticism.
+            BALANCED ATS AUDIT: Evaluate this resume fairly and realistically against standard Applicant Tracking System (ATS) criteria.
             
-            SCORING MANDATES (CRITICAL):
-            - **85-100 (ELITE ONLY)**: Reserved ONLY for resumes with perfect formatting AND high-impact, quantified metrics (%, $, months) in EVERY individual bullet point. If even ONE job block is generic, it CANNOT be Elite.
-            - **70-84 (STRONG)**: High-quality technical skills and standard format, but lacks consistent data-driven results. 
-            - **50-69 (AVERAGE)**: Meaningful experience but written with generic 'task-based' bullets (e.g., 'Responsible for...', 'Managed...'). 
-            - **BELOW 50 (REJECT)**: Any major formatting error (tables, columns, images) OR purely generic text without technical depth.
+            SCORING TIERS (BALANCED & REALISTIC):
+            - **85-100 (EXCELLENT MATCH)**: Clear structure, strong relevant keywords, well-defined experience, and quantified achievements.
+            - **70-84 (COMPETITIVE / GOOD)**: Solid technical foundation and skills, clean formatting, and clear experience, with potential to add more measurable metrics.
+            - **55-69 (MODERATE / DEVELOPING)**: Good core skills or projects, but bullet points could be more action-oriented or lack sufficient technical detail.
+            - **BELOW 55 (NEEDS SIGNIFICANT WORK)**: Missing critical sections (like Skills or Education), or very sparse content.
 
-            STRICT PENALTIES:
-            - Deduct 20 points if no specific numbers (%, $, #) are found in the last 2 roles.
-            - Deduct 15 points if the summary is 'Objective-based' instead of 'Result-based'.
-            - Deduct 30 points if it uses a multi-column layout (ATS-killer).
-            - Deduct 10 points for every section header that is non-standard.
+            BALANCED DEDUCTIONS:
+            - Deduct 5-10 points if bullet points lack measurable metrics or impact numbers.
+            - Deduct 5 points if section headers are non-standard.
+            - Deduct 5-10 points if layout elements could hinder standard parsing.
+            - Reward relevant tech stack keywords, education, and clear project/work descriptions fairly.
 
-            NEW ANALYTICS (MANDATORY):
-            - **quantificationScore**: Calculate what % of bullet points contain at least one piece of measurable data (numbers, currency, or percentages). 0-100.
-            - **verbAnalysis**: Identify up to 3 'weak' or 'passive' verbs (e.g., 'Helped', 'Handled', 'Managed') and provide 'strong' or 'active' alternatives (e.g., 'Spearheaded', 'Orchestrated', 'Executed').
+            ANALYTICS:
+            - **quantificationScore**: Calculate the percentage (0-100) of bullet points that include measurable data (metrics, numbers, or percentages).
+            - **verbAnalysis**: Identify up to 3 passive or generic verbs (e.g., 'Helped', 'Worked on', 'Handled') and provide stronger, impactful action alternatives (e.g., 'Spearheaded', 'Engineered', 'Optimized').
 
             RUBRIC:
-            1. **atsScore**: (0-100) Be cold. Do not give a 'participation' score. If a resume is just 'okay', it's a 60, not an 80.
-            2. **interviewProbability**: (0-100) Reflect the truth: in a pile of 500 resumes, would this specific one realistically get a call?
+            1. **atsScore**: (0-100) Fair and objective score reflecting realistic ATS compatibility and recruiter appeal.
+            2. **interviewProbability**: (0-100) Realistic probability of securing an interview based on the resume's competitiveness.
             
             Return strictly as a JSON object with this structure:
             {
