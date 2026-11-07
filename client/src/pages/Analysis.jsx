@@ -732,11 +732,15 @@ const Analysis = () => {
                         <Target className="w-3.5 h-3.5" /> Key Keyword Gaps
                     </p>
                     <div className="flex flex-wrap gap-2">
-                    {result.keywordGap?.filter(k => !k.found).map((item, i) => (
-                      <span key={i} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-400 text-xs font-medium">
-                        {item.keyword}
-                      </span>
-                    ))}
+                    {result.keywordGap?.filter(k => !k.found).length > 0 ? (
+                      result.keywordGap.filter(k => !k.found).map((item, i) => (
+                        <span key={i} className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-medium">
+                          {item.keyword}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-500 italic">No critical keyword gaps identified</span>
+                    )}
                     </div>
                   </div>
 
@@ -763,20 +767,26 @@ const Analysis = () => {
                     </p>
                   </div>
 
-                  {/* New Verb Analysis */}
+                  {/* Action Strength */}
                   {result.verbAnalysis && (
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                         <Zap className="w-3.5 h-3.5 text-yellow-500" /> Action Strength
                       </p>
                       <div className="flex flex-wrap gap-1.5">
-                        {result.verbAnalysis.weakVerbs?.map((v, i) => (
-                          <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/5 border border-red-500/10">
-                            <span className="text-[10px] font-bold text-red-400 line-through opacity-60">{v}</span>
-                            <ArrowRight className="w-2.5 h-2.5 text-slate-600" />
-                            <span className="text-[10px] font-bold text-emerald-400">{result.verbAnalysis.strongAlternatives?.[i]}</span>
+                        {result.verbAnalysis.weakVerbs?.length > 0 ? (
+                          result.verbAnalysis.weakVerbs.map((v, i) => (
+                            <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/5 border border-red-500/10">
+                              <span className="text-[10px] font-bold text-red-400 line-through opacity-60">{v}</span>
+                              <ArrowRight className="w-2.5 h-2.5 text-slate-600" />
+                              <span className="text-[10px] font-bold text-emerald-400">{result.verbAnalysis.strongAlternatives?.[i]}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                            <span className="text-[10px] font-bold text-emerald-400">Strong, high-impact action verbs used throughout resume</span>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}

@@ -60,8 +60,9 @@ export const analyzeResume = async (req, res) => {
             - Reward relevant tech stack keywords, education, and clear project/work descriptions fairly.
 
             ANALYTICS:
-            - **quantificationScore**: Evaluate the overall level of quantified data (0-100). Check for metrics, numbers, percentages (%), version numbers, scale indicators (users, requests, databases, projects), and academic scores (GPA/CGPA). If the candidate specifies technical versions and projects, give appropriate partial credit (e.g., 25-45) rather than 0.
-            - **verbAnalysis**: Identify up to 3 passive or generic verbs (e.g., 'Helped', 'Worked on', 'Handled') and provide stronger, impactful action alternatives (e.g., 'Spearheaded', 'Engineered', 'Optimized').
+            - **quantificationScore**: Evaluate the overall level of quantified data (0-100). Check for metrics, numbers, percentages (%), version numbers, scale indicators (users, requests, databases, projects), and academic scores (GPA/CGPA). If the candidate specifies technical versions and projects, give appropriate partial credit (e.g., 30-50) rather than 0.
+            - **verbAnalysis**: Always select 3-4 common action verbs found in the resume (such as 'Developed', 'Built', 'Managed', 'Worked on', 'Maintained', 'Designed') and provide higher-impact, executive alternatives (such as 'Engineered', 'Architected', 'Spearheaded', 'Optimized', 'Orchestrated'). Never return an empty array.
+            - **keywordGap**: Provide 4-6 industry-standard technical keywords/skills for their target role, marking whether each is found in the resume: [{ "keyword": "string", "found": boolean }].
 
             RUBRIC:
             1. **atsScore**: (0-100) Fair and objective score reflecting realistic ATS compatibility and recruiter appeal.
@@ -88,9 +89,10 @@ export const analyzeResume = async (req, res) => {
                 "weakVerbs": ["string"],
                 "strongAlternatives": ["string"]
               },
+              "keywordGap": [{ "keyword": "string", "found": boolean }],
               "contentSuggestions": ["string"],
               "jobRoleSuggestions": ["string"]
-              ${jobDescription ? ',\n              "jdMatchScore": number,\n              "jdInsights": ["string"],\n              "keywordGap": [{ "keyword": "string", "found": true/false }]' : ''}
+              ${jobDescription ? ',\n              "jdMatchScore": number,\n              "jdInsights": ["string"]' : ''}
             }
 
             Resume Text:
@@ -117,13 +119,25 @@ export const analyzeResume = async (req, res) => {
     // Guardrail: Ensure realistic quantification score
     if (!analysisResult.quantificationScore || analysisResult.quantificationScore < 10) {
       const numbersFound = (resumeText.match(/\b\d+(\.\d+)?%?(\+)?\b/g) || []).length;
-      if (numbersFound >= 5) {
-        analysisResult.quantificationScore = Math.min(65, 20 + (numbersFound * 3));
-      } else if (numbersFound >= 2) {
-        analysisResult.quantificationScore = 25;
-      } else {
-        analysisResult.quantificationScore = 15;
-      }
+      analysisResult.quantificationScore = Math.max(30, Math.min(75, 25 + (numbersFound * 4)));
+    }
+
+    // Guardrail: Ensure verbAnalysis is never empty
+    if (!analysisResult.verbAnalysis?.weakVerbs?.length) {
+      analysisResult.verbAnalysis = {
+        weakVerbs: ['Developed', 'Built', 'Maintained', 'Designed'],
+        strongAlternatives: ['Engineered', 'Architected', 'Optimized', 'Spearheaded']
+      };
+    }
+
+    // Guardrail: Ensure keywordGap is always populated
+    if (!analysisResult.keywordGap || !analysisResult.keywordGap.length) {
+      const textLower = (resumeText || '').toLowerCase();
+      const standardKeywords = ['Docker', 'CI/CD Pipelines', 'TypeScript', 'Unit Testing', 'Redis', 'Microservices'];
+      analysisResult.keywordGap = standardKeywords.map(kw => ({
+        keyword: kw,
+        found: textLower.includes(kw.toLowerCase())
+      }));
     }
 
     const originalName = req.file.originalname;
