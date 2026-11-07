@@ -151,76 +151,82 @@ const Analysis = () => {
       const margin = 16;
       const contentWidth = pageWidth - margin * 2;
       let yPos = 16;
-      const lineH = 4.2;
+      const lineH = 4.4;
 
-      // Force consistent character spacing on every text call
-      const safeText = (str, x, y, opts) => {
-        pdf.setCharSpace(0);
-        pdf.setR2L(false);
-        if (opts) {
-          pdf.text(String(str), x, y, opts);
-        } else {
-          pdf.text(String(str), x, y);
-        }
+      // ─── CRUCIAL SANITIZER: Eliminates Unicode 16-bit encoding bugs in jsPDF ───
+      // jsPDF with standard helvetica falls back to 16-bit wide null-byte spacing
+      // whenever it encounters characters like non-breaking hyphen (U+2011), narrow spaces (U+202F), etc.
+      const clean = (val) => {
+        if (!val) return '';
+        return String(val)
+          .replace(/[\u2010-\u2015\u2212]/g, '-')         // Convert all Unicode hyphens/dashes to standard ASCII '-'
+          .replace(/[\u2018\u2019\u201A\u201B]/g, "'")    // Convert curly single quotes to standard "'"
+          .replace(/[\u201C\u201D\u201E\u201F]/g, '"')    // Convert curly double quotes to standard '"'
+          .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ') // Convert all non-breaking/narrow spaces to normal space
+          .replace(/\u2026/g, '...')                       // Convert ellipsis to three dots
+          .replace(/\u2022/g, '-')                         // Convert bullet characters
+          .replace(/[^\x20-\x7E\t\n\r]/g, '')              // Strip any remaining non-ASCII characters
+          .trim();
       };
 
-      // Wrap text into lines and return array of strings
-      const wrapText = (str, maxW) => {
-        pdf.setCharSpace(0);
-        return pdf.splitTextToSize(String(str), maxW);
+      // Wrap text into clean lines with standard font metrics
+      const wrapText = (text, maxW, fontSize = 8.5, fontStyle = 'normal') => {
+        pdf.setFont('helvetica', fontStyle);
+        pdf.setFontSize(fontSize);
+        const cleaned = clean(text);
+        return pdf.splitTextToSize(cleaned, maxW);
       };
 
       // Colors
-      const C_PRIMARY = [15, 23, 42];
-      const C_ACCENT = [37, 99, 235];
-      const C_DARK = [30, 41, 59];
-      const C_MUTED = [100, 116, 139];
-      const C_CARD = [248, 250, 252];
-      const C_LINE = [226, 232, 240];
+      const C_PRIMARY = [15, 23, 42];     // #0f172a
+      const C_ACCENT = [37, 99, 235];     // #2563eb
+      const C_DARK = [30, 41, 59];       // #1e293b
+      const C_MUTED = [100, 116, 139];   // #64748b
+      const C_CARD = [248, 250, 252];    // #f8fafc
+      const C_LINE = [226, 232, 240];    // #e2e8f0
 
       const checkPageBreak = (need) => {
         if (yPos + need > pageHeight - 20) {
           pdf.addPage();
           yPos = 22;
-          pdf.setCharSpace(0);
           pdf.setFontSize(8);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(...C_MUTED);
-          safeText("REZUM AI  |  ATS Resume Audit & Optimization Report", margin, 12);
+          pdf.text("REZUM AI  |  ATS Resume Audit & Optimization Report", margin, 12);
           pdf.setDrawColor(...C_LINE);
           pdf.setLineWidth(0.3);
           pdf.line(margin, 15, pageWidth - margin, 15);
         }
       };
 
-      // ─── HEADER BANNER ───
+      // ─── 1. HEADER BANNER ───
       pdf.setFillColor(...C_PRIMARY);
       pdf.roundedRect(margin, yPos, contentWidth, 28, 3, 3, 'F');
 
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(255, 255, 255);
-      safeText("REZUM", margin + 8, yPos + 12);
+      pdf.text("REZUM", margin + 8, yPos + 12);
       pdf.setTextColor(56, 189, 248);
-      safeText(".", margin + 34, yPos + 12);
+      pdf.text(".", margin + 34, yPos + 12);
 
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(148, 163, 184);
-      safeText("EXECUTIVE ATS RESUME AUDIT REPORT", margin + 8, yPos + 19);
+      pdf.text("EXECUTIVE ATS RESUME AUDIT REPORT", margin + 8, yPos + 19);
 
       pdf.setFontSize(8);
       pdf.setTextColor(203, 213, 225);
       const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-      safeText("Date: " + dateStr, pageWidth - margin - 8, yPos + 10, { align: 'right' });
-      const targetRole = result.jobRoleSuggestions?.[0] || 'Software Professional';
-      safeText("Target: " + targetRole.substring(0, 32), pageWidth - margin - 8, yPos + 16, { align: 'right' });
-      const fileNameStr = (resumeData?.fileName || 'Resume Document').substring(0, 30);
-      safeText("File: " + fileNameStr, pageWidth - margin - 8, yPos + 22, { align: 'right' });
+      pdf.text("Date: " + dateStr, pageWidth - margin - 8, yPos + 10, { align: 'right' });
+      const targetRole = clean(result.jobRoleSuggestions?.[0] || 'Software Professional');
+      pdf.text("Target: " + targetRole.substring(0, 32), pageWidth - margin - 8, yPos + 16, { align: 'right' });
+      const fileNameStr = clean(resumeData?.fileName || 'Resume Document').substring(0, 30);
+      pdf.text("File: " + fileNameStr, pageWidth - margin - 8, yPos + 22, { align: 'right' });
 
       yPos += 34;
 
-      // ─── SCORE CARD ───
+      // ─── 2. SCORE CARD ───
       const cardH = 36;
       pdf.setFillColor(...C_CARD);
       pdf.setDrawColor(...C_LINE);
@@ -237,16 +243,16 @@ const Analysis = () => {
       pdf.setFontSize(26);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...sColor);
-      safeText(String(score), margin + 10, yPos + 18);
+      pdf.text(String(score), margin + 10, yPos + 18);
 
       pdf.setFontSize(11);
       pdf.setTextColor(...C_MUTED);
-      safeText("/ 100", margin + 28, yPos + 18);
+      pdf.text("/ 100", margin + 28, yPos + 18);
 
       pdf.setFontSize(7.5);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...sColor);
-      safeText(sBadge, margin + 10, yPos + 26);
+      pdf.text(sBadge, margin + 10, yPos + 26);
 
       // Progress bar
       const barX = margin + 10;
@@ -275,21 +281,19 @@ const Analysis = () => {
         pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...C_DARK);
-        safeText(m.val, cx + 8, yPos + 17);
+        pdf.text(m.val, cx + 8, yPos + 17);
 
         pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(...C_MUTED);
-        safeText(m.label, cx + 8, yPos + 24);
+        pdf.text(m.label, cx + 8, yPos + 24);
       });
 
       yPos += cardH + 8;
 
-      // ─── EXECUTIVE SUMMARY ───
-      const summary = result.overallAnalysis || "Comprehensive resume audit conducted using AI ATS benchmarks.";
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'normal');
-      const sumLines = wrapText(summary, contentWidth - 20);
+      // ─── 3. EXECUTIVE EVALUATION SUMMARY ───
+      const rawSummary = result.overallAnalysis || "Comprehensive resume audit conducted using AI ATS benchmarks.";
+      const sumLines = wrapText(rawSummary, contentWidth - 20, 8.5, 'normal');
       const sumBoxH = 14 + (sumLines.length * lineH);
 
       checkPageBreak(sumBoxH + 6);
@@ -304,20 +308,20 @@ const Analysis = () => {
       pdf.setFontSize(8.5);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...C_PRIMARY);
-      safeText("EXECUTIVE EVALUATION SUMMARY", margin + 8, yPos + 7);
+      pdf.text("EXECUTIVE EVALUATION SUMMARY", margin + 8, yPos + 7);
 
       pdf.setFontSize(8.5);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(...C_DARK);
       let sy = yPos + 13;
       for (let i = 0; i < sumLines.length; i++) {
-        safeText(sumLines[i], margin + 8, sy);
+        pdf.text(sumLines[i], margin + 8, sy);
         sy += lineH;
       }
 
       yPos += sumBoxH + 8;
 
-      // ─── REUSABLE SECTION CARD DRAWER ───
+      // ─── 4. REUSABLE CARD DRAWER ───
       const drawCard = (title, items, opts = {}) => {
         if (!items || items.length === 0) return;
         const {
@@ -329,18 +333,15 @@ const Analysis = () => {
 
         const px = 10;
         const py = 8;
-        const indent = bullet ? 8 : 0;
+        const indent = bullet ? 7 : 0;
         const wrapW = contentWidth - px * 2 - indent;
 
-        // Pre-calculate all line wrapping
-        pdf.setFontSize(8.5);
-        pdf.setFont('helvetica', 'normal');
-        const allParsed = items.map(item => wrapText(item, wrapW));
+        // Pre-calculate wrapped lines for all items using sanitized text
+        const allParsed = items.map(item => wrapText(item, wrapW, 8.5, 'normal'));
 
-        // Calculate total height
         let innerH = 0;
         allParsed.forEach(lines => {
-          innerH += lines.length * lineH + (bullet ? 3 : 2);
+          innerH += (lines.length * lineH) + (bullet ? 2.5 : 1.5);
         });
 
         const totalH = 14 + py * 2 + innerH;
@@ -360,7 +361,7 @@ const Analysis = () => {
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...C_PRIMARY);
-        safeText(title.toUpperCase(), margin + px, yPos + 8);
+        pdf.text(clean(title).toUpperCase(), margin + px, yPos + 8);
 
         // Title underline
         pdf.setDrawColor(...C_LINE);
@@ -371,6 +372,7 @@ const Analysis = () => {
         let cy = yPos + 17;
         allParsed.forEach(lines => {
           if (bullet) {
+            // Draw clean vector dot
             pdf.setFillColor(...accent);
             pdf.circle(margin + px + 1.5, cy - 1, 1, 'F');
           }
@@ -379,16 +381,16 @@ const Analysis = () => {
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(...color);
           for (let i = 0; i < lines.length; i++) {
-            safeText(lines[i], margin + px + indent, cy);
+            pdf.text(lines[i], margin + px + indent, cy);
             cy += lineH;
           }
-          cy += bullet ? 2.5 : 1.5;
+          cy += (bullet ? 2.5 : 1.5);
         });
 
         yPos += totalH + 6;
       };
 
-      // ─── RENDER ALL SECTIONS ───
+      // ─── RENDER SECTIONS ───
 
       // Skills
       const skills = [...(result.skills?.technical || []), ...(result.skills?.soft || [])];
@@ -481,7 +483,6 @@ const Analysis = () => {
       const totalPages = pdf.getNumberOfPages();
       for (let p = 1; p <= totalPages; p++) {
         pdf.setPage(p);
-        pdf.setCharSpace(0);
         pdf.setDrawColor(...C_LINE);
         pdf.setLineWidth(0.3);
         pdf.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
@@ -489,8 +490,8 @@ const Analysis = () => {
         pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(...C_MUTED);
-        safeText("Confidential  -  Generated by Rezum AI Resume Engine", margin, pageHeight - 9);
-        safeText("Page " + p + " of " + totalPages, pageWidth - margin, pageHeight - 9, { align: 'right' });
+        pdf.text("Confidential  -  Generated by Rezum AI Resume Engine", margin, pageHeight - 9);
+        pdf.text("Page " + p + " of " + totalPages, pageWidth - margin, pageHeight - 9, { align: 'right' });
       }
 
       pdf.save("Rezum-Audit-Report-" + new Date().getTime() + ".pdf");
