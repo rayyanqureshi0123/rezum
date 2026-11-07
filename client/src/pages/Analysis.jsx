@@ -291,50 +291,16 @@ const Analysis = () => {
 
       yPos += cardH + 8;
 
-      // ─── 3. EXECUTIVE EVALUATION SUMMARY ───
-      const rawSummary = result.overallAnalysis || "Comprehensive resume audit conducted using AI ATS benchmarks.";
-      const sumLines = wrapText(rawSummary, contentWidth - 20, 8.5, 'normal');
-      const sumBoxH = 14 + (sumLines.length * lineH);
-
-      checkPageBreak(sumBoxH + 6);
-      pdf.setFillColor(241, 245, 249);
-      pdf.setDrawColor(203, 213, 225);
-      pdf.setLineWidth(0.3);
-      pdf.roundedRect(margin, yPos, contentWidth, sumBoxH, 2.5, 2.5, 'FD');
-
-      pdf.setFillColor(...C_ACCENT);
-      pdf.roundedRect(margin, yPos, 2.5, sumBoxH, 1, 1, 'F');
-
-      pdf.setFontSize(8.5);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(...C_PRIMARY);
-      pdf.text("EXECUTIVE EVALUATION SUMMARY", margin + 8, yPos + 7);
-
-      pdf.setFontSize(8.5);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(...C_DARK);
-      let sy = yPos + 13;
-      for (let i = 0; i < sumLines.length; i++) {
-        pdf.text(sumLines[i], margin + 8, sy);
-        sy += lineH;
-      }
-
-      yPos += sumBoxH + 8;
-
-      // ─── 4. REUSABLE CARD DRAWER ───
+      // ─── 3. REUSABLE UNIFIED CARD DRAWER ───
+      // Guarantees 100% consistent typography, padding, color, and alignment across ALL sections
       const drawCard = (title, items, opts = {}) => {
         if (!items || items.length === 0) return;
-        const {
-          bullet = true,
-          accent = C_ACCENT,
-          bg = C_CARD,
-          color = C_DARK
-        } = opts;
+        const { bullet = false } = opts;
 
         const px = 10;
         const py = 8;
-        const indent = bullet ? 7 : 0;
-        const wrapW = contentWidth - px * 2 - indent;
+        const bulletIndent = bullet ? 6 : 0;
+        const wrapW = contentWidth - px * 2 - bulletIndent;
 
         // Pre-calculate wrapped lines for all items using sanitized text
         const allParsed = items.map(item => wrapText(item, wrapW, 8.5, 'normal'));
@@ -347,41 +313,41 @@ const Analysis = () => {
         const totalH = 14 + py * 2 + innerH;
         checkPageBreak(totalH + 4);
 
-        // Card background
-        pdf.setFillColor(...bg);
+        // Card background & border (Identical across all cards)
+        pdf.setFillColor(...C_CARD);
         pdf.setDrawColor(...C_LINE);
         pdf.setLineWidth(0.3);
         pdf.roundedRect(margin, yPos, contentWidth, totalH, 2.5, 2.5, 'FD');
 
-        // Left accent bar
-        pdf.setFillColor(...accent);
+        // Left accent bar (Uniform Dark Slate #1e293b)
+        pdf.setFillColor(...C_DARK);
         pdf.roundedRect(margin, yPos, 2.5, totalH, 1, 1, 'F');
 
-        // Title
+        // Title (Uniform 9pt Bold Uppercase #0f172a)
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...C_PRIMARY);
         pdf.text(clean(title).toUpperCase(), margin + px, yPos + 8);
 
-        // Title underline
+        // Divider underline
         pdf.setDrawColor(...C_LINE);
         pdf.setLineWidth(0.2);
         pdf.line(margin + px, yPos + 11, margin + contentWidth - px, yPos + 11);
 
-        // Render each item line-by-line
+        // Render each item line-by-line (Uniform 8.5pt Normal #1e293b)
         let cy = yPos + 17;
         allParsed.forEach(lines => {
           if (bullet) {
-            // Draw clean vector dot
-            pdf.setFillColor(...accent);
-            pdf.circle(margin + px + 1.5, cy - 1, 1, 'F');
+            // Crisp vector dot aligned with text
+            pdf.setFillColor(...C_DARK);
+            pdf.circle(margin + px + 1.2, cy - 1, 0.9, 'F');
           }
 
           pdf.setFontSize(8.5);
           pdf.setFont('helvetica', 'normal');
-          pdf.setTextColor(...color);
+          pdf.setTextColor(...C_DARK);
           for (let i = 0; i < lines.length; i++) {
-            pdf.text(lines[i], margin + px + indent, cy);
+            pdf.text(lines[i], margin + px + bulletIndent, cy);
             cy += lineH;
           }
           cy += (bullet ? 2.5 : 1.5);
@@ -390,93 +356,57 @@ const Analysis = () => {
         yPos += totalH + 6;
       };
 
-      // ─── RENDER SECTIONS ───
+      // ─── 4. RENDER ALL REPORT SECTIONS (UNIFIED FORMAT) ───
 
-      // Skills
+      // 1. Executive Summary
+      const rawSummary = result.overallAnalysis || "Comprehensive resume audit conducted using AI ATS benchmarks.";
+      drawCard("Executive Evaluation Summary", [rawSummary], { bullet: false });
+
+      // 2. Core Competencies & Skills
       const skills = [...(result.skills?.technical || []), ...(result.skills?.soft || [])];
       if (skills.length) {
-        drawCard("Core Competencies & Keywords", [skills.join(", ")], {
-          bullet: false,
-          accent: [37, 99, 235],
-          bg: [248, 250, 252],
-          color: [51, 65, 85]
-        });
+        drawCard("Core Competencies & Keywords", [skills.join(", ")], { bullet: false });
       }
 
-      // Missing Sections
+      // 3. Critical Gaps & Missing Sections
       if (result.missingSections?.length) {
-        drawCard("Critical Gaps & Missing Sections", result.missingSections, {
-          bullet: true,
-          accent: [217, 119, 6],
-          bg: [255, 251, 235],
-          color: [146, 64, 14]
-        });
+        drawCard("Critical Gaps & Missing Sections", result.missingSections, { bullet: true });
       }
 
-      // Content Suggestions
+      // 4. Strategic ATS Recommendations
       if (result.contentSuggestions?.length) {
-        drawCard("Strategic ATS Recommendations", result.contentSuggestions, {
-          bullet: true,
-          accent: [37, 99, 235],
-          bg: [239, 246, 255],
-          color: [30, 58, 138]
-        });
+        drawCard("Strategic ATS Recommendations", result.contentSuggestions, { bullet: true });
       }
 
-      // Verb Analysis
+      // 5. Action Verb Optimization
       if (result.verbAnalysis?.weakVerbs?.length) {
         const weak = result.verbAnalysis.weakVerbs.join(", ");
         const strong = (result.verbAnalysis.strongAlternatives || []).join(", ");
         drawCard("Action Verb Optimization", [
           "Passive/Overused Verbs Detected: " + weak,
           "High-Impact Action Alternatives: " + strong
-        ], {
-          bullet: true,
-          accent: [147, 51, 234],
-          bg: [250, 245, 255],
-          color: [88, 28, 135]
-        });
+        ], { bullet: true });
       }
 
-      // JD Insights
+      // 6. Target Role Alignment & JD Insights
       if (result.jdInsights?.length) {
-        drawCard("Target Role Alignment & JD Insights", result.jdInsights, {
-          bullet: true,
-          accent: [16, 185, 129],
-          bg: [236, 253, 245],
-          color: [6, 95, 70]
-        });
+        drawCard("Target Role Alignment & JD Insights", result.jdInsights, { bullet: true });
       }
 
-      // Missing Keywords
+      // 7. Missing Keywords from Job Description
       const missingKeys = result.keywordGap?.filter(k => !k.found).map(k => k.keyword);
       if (missingKeys?.length) {
-        drawCard("Missing Keywords from Job Description", [missingKeys.join(", ")], {
-          bullet: false,
-          accent: [220, 38, 38],
-          bg: [254, 242, 242],
-          color: [153, 27, 27]
-        });
+        drawCard("Missing Keywords from Job Description", [missingKeys.join(", ")], { bullet: false });
       }
 
-      // Career Trajectory
+      // 8. Suggested Career Trajectory
       if (result.jobRoleSuggestions?.length) {
-        drawCard("Suggested Career Trajectory", [result.jobRoleSuggestions.join("  |  ")], {
-          bullet: false,
-          accent: [99, 102, 241],
-          bg: [245, 243, 255],
-          color: [67, 56, 202]
-        });
+        drawCard("Suggested Career Trajectory", [result.jobRoleSuggestions.join("   |   ")], { bullet: false });
       }
 
-      // Market Readiness
+      // 9. Market Readiness Evaluation
       if (result.marketReadinessInsight) {
-        drawCard("Market Readiness Evaluation", [result.marketReadinessInsight], {
-          bullet: false,
-          accent: [71, 85, 105],
-          bg: [248, 250, 252],
-          color: [30, 41, 59]
-        });
+        drawCard("Market Readiness Evaluation", [result.marketReadinessInsight], { bullet: false });
       }
 
       // ─── PAGE NUMBERS & FOOTERS ───
