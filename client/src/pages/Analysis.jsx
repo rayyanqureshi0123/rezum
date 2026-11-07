@@ -148,116 +148,336 @@ const Analysis = () => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
-      let yPos = 20;
-      const margin = 20;
-      const maxTextWidth = pageWidth - margin * 2;
+      const margin = 16;
+      const contentWidth = pageWidth - margin * 2; // 178mm
+      let yPos = 16;
+
+      // Color Palette
+      const C_PRIMARY = [15, 23, 42];     // Dark Slate #0f172a
+      const C_ACCENT = [37, 99, 235];     // Royal Blue #2563eb
+      const C_TEXT_DARK = [30, 41, 59];   // Slate 800 #1e293b
+      const C_TEXT_MUTED = [100, 116, 139]; // Slate 500 #64748b
+      const C_CARD_BG = [248, 250, 252];  // Slate 50 #f8fafc
+      const C_BORDER = [226, 232, 240];   // Slate 200 #e2e8f0
 
       const checkPageBreak = (neededHeight) => {
         if (yPos + neededHeight > pageHeight - 20) {
           pdf.addPage();
-          yPos = 20;
+          yPos = 22;
+          // Draw continuation header
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(...C_TEXT_MUTED);
+          pdf.text("REZUM AI  |  ATS Resume Audit & Optimization Report", margin, 12);
+          pdf.setDrawColor(...C_BORDER);
+          pdf.setLineWidth(0.3);
+          pdf.line(margin, 15, pageWidth - margin, 15);
         }
       };
 
+      // ─── 1. TOP HEADER BANNER ───
+      pdf.setFillColor(...C_PRIMARY);
+      pdf.roundedRect(margin, yPos, contentWidth, 28, 3, 3, 'F');
+
+      // Brand Logo Text
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(33, 44, 79);
-      pdf.text("AI CV Analysis Report", margin, yPos);
-      yPos += 10;
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("REZUM", margin + 8, yPos + 12);
+      pdf.setTextColor(56, 189, 248); // Cyan
+      pdf.text(".", margin + 34, yPos + 12);
 
-      pdf.setFontSize(10);
+      // Report Subtitle
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100, 100, 100);
-      const summaryText = result.overallAnalysis || "Detailed AI CV analysis highlighting strengths, weaknesses, and improvement areas.";
-      const summaryLines = pdf.splitTextToSize(summaryText, maxTextWidth);
-      pdf.text(summaryLines, margin, yPos);
-      yPos += (summaryLines.length * 5) + 10;
+      pdf.setTextColor(148, 163, 184); // Slate 400
+      pdf.text("EXECUTIVE ATS RESUME AUDIT REPORT", margin + 8, yPos + 19);
 
-      checkPageBreak(25);
-      pdf.setFontSize(12);
+      // Meta Details (Right Side)
+      pdf.setFontSize(8);
+      pdf.setTextColor(203, 213, 225);
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      pdf.text(`Date: ${dateStr}`, pageWidth - margin - 8, yPos + 10, { align: 'right' });
+      const targetRole = result.jobRoleSuggestions?.[0] || 'Software Professional';
+      pdf.text(`Target: ${targetRole.substring(0, 32)}`, pageWidth - margin - 8, yPos + 16, { align: 'right' });
+      const fileNameStr = (resumeData?.fileName || 'Resume Document').substring(0, 30);
+      pdf.text(`File: ${fileNameStr}`, pageWidth - margin - 8, yPos + 22, { align: 'right' });
+
+      yPos += 34;
+
+      // ─── 2. SCORE & KEY METRICS CARD ───
+      const scoreCardHeight = 36;
+      pdf.setFillColor(...C_CARD_BG);
+      pdf.setDrawColor(...C_BORDER);
+      pdf.setLineWidth(0.4);
+      pdf.roundedRect(margin, yPos, contentWidth, scoreCardHeight, 3, 3, 'FD');
+
+      // ATS Score Block
+      const score = Number(result.atsScore) || 0;
+      let scoreColor = [220, 38, 38]; // Red
+      let scoreBadge = "NEEDS REVISION";
+      if (score >= 85) { scoreColor = [22, 163, 74]; scoreBadge = "ELITE CANDIDATE"; }
+      else if (score >= 70) { scoreColor = [37, 99, 235]; scoreBadge = "STRONG MATCH"; }
+      else if (score >= 50) { scoreColor = [217, 119, 6]; scoreBadge = "AVERAGE PROFILE"; }
+
+      pdf.setFontSize(26);
       pdf.setFont('helvetica', 'bold');
-      pdf.text("Overall Score:", margin, yPos);
-      pdf.setFontSize(16);
-      pdf.setTextColor(30, 58, 138);
-      pdf.text(`${result.atsScore} /100`, margin + 33, yPos);
-      yPos += 6;
+      pdf.setTextColor(...scoreColor);
+      pdf.text(`${score}`, margin + 10, yPos + 18);
 
-      const barWidth = maxTextWidth;
-      pdf.setFillColor(235, 235, 235);
-      pdf.roundedRect(margin, yPos, barWidth, 4, 3, 3, 'F');
-      if (result.atsScore > 0) {
-         const scoreWidth = (result.atsScore / 100) * barWidth;
-         if (result.atsScore >= 80) pdf.setFillColor(52, 168, 83);
-         else if (result.atsScore >= 50) pdf.setFillColor(251, 188, 5);
-         else pdf.setFillColor(234, 67, 53);
-         pdf.roundedRect(margin, yPos, scoreWidth, 4, 3, 3, 'F');
-      }
-      yPos += 10;
-
-      const metricsText = `${result.jdMatchScore !== undefined ? `JD Match: ${result.jdMatchScore}%  |  ` : ''}Interview Prob: ${result.interviewProbability || Math.max(0, result.atsScore - 10)}%`;
       pdf.setFontSize(11);
-      pdf.text(metricsText, margin, yPos);
-      yPos += 12;
+      pdf.setTextColor(...C_TEXT_MUTED);
+      pdf.text("/ 100", margin + 28, yPos + 18);
 
-      const drawSection = (title, items, boxColor, textColor, isBullet = true) => {
-        if (!items || items.length === 0) return;
-        checkPageBreak(30);
-        pdf.setFontSize(12);
+      pdf.setFontSize(7.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...scoreColor);
+      pdf.text(scoreBadge, margin + 10, yPos + 26);
+
+      // Score Progress Bar
+      const barX = margin + 10;
+      const barY = yPos + 29;
+      const barW = 46;
+      pdf.setFillColor(226, 232, 240);
+      pdf.roundedRect(barX, barY, barW, 2.5, 1, 1, 'F');
+      pdf.setFillColor(...scoreColor);
+      pdf.roundedRect(barX, barY, Math.max(2, (score / 100) * barW), 2.5, 1, 1, 'F');
+
+      // Metric Stats Dividers & Columns
+      const stats = [
+        { label: "Interview Probability", val: `${result.interviewProbability || Math.max(5, score - 10)}%` },
+        { label: "Quantified Metrics", val: `${result.quantificationScore ?? 45}%` },
+        { label: "Target JD Match", val: result.jdMatchScore !== undefined ? `${result.jdMatchScore}%` : 'Standard' }
+      ];
+
+      const colStartX = margin + 64;
+      const colWidth = (contentWidth - 68) / 3;
+
+      stats.forEach((st, idx) => {
+        const cx = colStartX + idx * colWidth;
+        // Divider line
+        pdf.setDrawColor(...C_BORDER);
+        pdf.line(cx, yPos + 6, cx, yPos + scoreCardHeight - 6);
+
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(33, 44, 79);
-        pdf.text(title, margin, yPos);
-        yPos += 5;
-        const boxPadding = 6;
-        const itemSpacing = 5;
-        const textIndent = isBullet ? 10 : 2;
-        const wrapMaxWidth = maxTextWidth - boxPadding * 2 - textIndent;
-        let totalLines = 0;
-        pdf.setFontSize(10);
+        pdf.setTextColor(...C_TEXT_DARK);
+        pdf.text(st.val, cx + 8, yPos + 17);
+
+        pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'normal');
-        const parsedItems = items.map(item => {
-            const lines = pdf.splitTextToSize(item, wrapMaxWidth + 5);
-            totalLines += lines.length;
-            return lines;
+        pdf.setTextColor(...C_TEXT_MUTED);
+        const labelLines = pdf.splitTextToSize(st.label, colWidth - 10);
+        pdf.text(labelLines, cx + 8, yPos + 24);
+      });
+
+      yPos += scoreCardHeight + 8;
+
+      // ─── 3. EXECUTIVE SUMMARY / OVERALL ANALYSIS ───
+      const summary = result.overallAnalysis || "Comprehensive resume audit conducted using AI ATS benchmarks.";
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      const sumLines = pdf.splitTextToSize(summary, contentWidth - 18);
+      const summaryBoxHeight = 14 + (sumLines.length * 4.4);
+
+      checkPageBreak(summaryBoxHeight + 6);
+      pdf.setFillColor(241, 245, 249);
+      pdf.setDrawColor(203, 213, 225);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(margin, yPos, contentWidth, summaryBoxHeight, 2.5, 2.5, 'FD');
+
+      // Accent border bar on left
+      pdf.setFillColor(...C_ACCENT);
+      pdf.roundedRect(margin, yPos, 2.5, summaryBoxHeight, 1, 1, 'F');
+
+      pdf.setFontSize(8.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...C_PRIMARY);
+      pdf.text("EXECUTIVE EVALUATION SUMMARY", margin + 8, yPos + 7);
+
+      pdf.setFontSize(8.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(...C_TEXT_DARK);
+      let sY = yPos + 13;
+      sumLines.forEach(l => {
+        pdf.text(l, margin + 8, sY);
+        sY += 4.4;
+      });
+
+      yPos += summaryBoxHeight + 8;
+
+      // ─── 4. HELPER: DRAW STRUCTURED SECTION CARD ───
+      const drawCardSection = (title, items, options = {}) => {
+        if (!items || items.length === 0) return;
+        const {
+          isBullet = true,
+          accentColor = C_ACCENT,
+          cardBg = C_CARD_BG,
+          textColor = C_TEXT_DARK,
+          tagLayout = false
+        } = options;
+
+        const padX = 10;
+        const padY = 8;
+        const bulletIndent = isBullet ? 6 : 0;
+        const textWrapW = contentWidth - padX * 2 - bulletIndent;
+
+        // Calculate heights
+        pdf.setFontSize(8.5);
+        pdf.setFont('helvetica', 'normal');
+
+        const parsedItems = items.map(it => {
+          const lines = pdf.splitTextToSize(String(it), textWrapW);
+          return lines;
         });
-        const boxHeight = boxPadding * 2 + (totalLines * 5) + ((items.length - 1) * itemSpacing);
-        checkPageBreak(boxHeight + 10);
-        pdf.setFillColor(boxColor[0], boxColor[1], boxColor[2]);
-        pdf.roundedRect(margin, yPos, maxTextWidth, boxHeight, 3, 3, 'F');
-        let textY = yPos + boxPadding + 4;
+
+        let contentInnerH = 0;
+        parsedItems.forEach(l => {
+          contentInnerH += (l.length * 4.4) + (isBullet ? 3 : 2);
+        });
+
+        const totalCardH = 12 + padY * 2 + contentInnerH;
+        checkPageBreak(totalCardH + 4);
+
+        // Draw Card Background
+        pdf.setFillColor(...cardBg);
+        pdf.setDrawColor(...C_BORDER);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, yPos, contentWidth, totalCardH, 2.5, 2.5, 'FD');
+
+        // Accent indicator bar on title
+        pdf.setFillColor(...accentColor);
+        pdf.roundedRect(margin, yPos, 2.5, totalCardH, 1, 1, 'F');
+
+        // Section Title
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(...C_PRIMARY);
+        pdf.text(title.toUpperCase(), margin + padX, yPos + 8);
+
+        // Divider under title
+        pdf.setDrawColor(...C_BORDER);
+        pdf.setLineWidth(0.2);
+        pdf.line(margin + padX, yPos + 11, margin + contentWidth - padX, yPos + 11);
+
+        // Draw Items
+        let curY = yPos + 16;
         parsedItems.forEach(lines => {
-             if (isBullet) {
-                 pdf.setFontSize(18);
-                 pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-                 pdf.text('•', margin + boxPadding + 2, textY + 1);
-             }
-             pdf.setFontSize(10);
-             pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-             pdf.text(lines, margin + boxPadding + textIndent, textY);
-             textY += (lines.length * 5) + itemSpacing;
+          if (isBullet) {
+            // Draw a crisp vector circle instead of unicode bullet
+            pdf.setFillColor(...accentColor);
+            pdf.circle(margin + padX + 1.5, curY - 1.2, 1, 'F');
+          }
+
+          pdf.setFontSize(8.5);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(...textColor);
+          lines.forEach(lineText => {
+            pdf.text(lineText, margin + padX + bulletIndent, curY);
+            curY += 4.4;
+          });
+          curY += (isBullet ? 2.5 : 1.5);
         });
-        yPos += boxHeight + 10;
+
+        yPos += totalCardH + 6;
       };
 
+      // ─── 5. CORE COMPETENCIES (Skills) ───
       const skills = [...(result.skills?.technical || []), ...(result.skills?.soft || [])];
-      if (skills.length) drawSection("Core Competencies", [skills.join(', ')], [245, 247, 250], [50, 50, 50], false);
-      
-      if (result.missingSections?.length) drawSection("Essential Gaps (Missing Sections)", result.missingSections, [255, 244, 230], [204, 120, 0], true);
-      
-      if (result.jdInsights?.length) drawSection("Target Role Alignment (JD Insights)", result.jdInsights, [230, 244, 234], [29, 130, 60], true);
-      
-      const missingKeys = result.keywordGap?.filter(k => !k.found).map(k => k.keyword).join(', ');
-      if (missingKeys) drawSection("Missing Keywords", [missingKeys], [252, 232, 230], [219, 68, 55], false);
-      
-      if (result.contentSuggestions?.length) drawSection("AI Content Recommendations", result.contentSuggestions, [232, 240, 254], [26, 115, 232], true);
-      
-      if (result.jobRoleSuggestions?.length) drawSection("Suggested Career Trajectory", [result.jobRoleSuggestions.join(' | ')], [240, 232, 254], [107, 33, 168], false);
-      
-      if (result.marketReadinessInsight) drawSection("Market Readiness Evaluation", [result.marketReadinessInsight], [235, 235, 235], [30, 30, 30], false);
+      if (skills.length) {
+        drawCardSection("Core Competencies & Keywords", [skills.join('  •  ')], {
+          isBullet: false,
+          accentColor: [37, 99, 235],
+          cardBg: [248, 250, 252],
+          textColor: [51, 65, 85]
+        });
+      }
 
-      pdf.save(`Rezum-Report-${new Date().getTime()}.pdf`);
+      // ─── 6. ESSENTIAL GAPS (Missing Sections) ───
+      if (result.missingSections?.length) {
+        drawCardSection("Critical Gaps & Missing Sections", result.missingSections, {
+          isBullet: true,
+          accentColor: [217, 119, 6], // Amber
+          cardBg: [255, 251, 235],
+          textColor: [146, 64, 14]
+        });
+      }
+
+      // ─── 7. ACTIONABLE CONTENT RECOMMENDATIONS ───
+      if (result.contentSuggestions?.length) {
+        drawCardSection("Strategic ATS Recommendations", result.contentSuggestions, {
+          isBullet: true,
+          accentColor: [37, 99, 235], // Blue
+          cardBg: [239, 246, 255],
+          textColor: [30, 58, 138]
+        });
+      }
+
+      // ─── 8. ACTION VERBS ANALYSIS ───
+      if (result.verbAnalysis?.weakVerbs?.length) {
+        const weak = result.verbAnalysis.weakVerbs.join(', ');
+        const strong = (result.verbAnalysis.strongAlternatives || []).join(', ');
+        const verbLines = [
+          `Passive/Overused Verbs Detected: ${weak}`,
+          `High-Impact Action Alternatives: ${strong}`
+        ];
+        drawCardSection("Action Verb Optimization", verbLines, {
+          isBullet: true,
+          accentColor: [147, 51, 234], // Purple
+          cardBg: [250, 245, 255],
+          textColor: [88, 28, 135]
+        });
+      }
+
+      // ─── 9. TARGET ROLE / JD INSIGHTS (if applicable) ───
+      if (result.jdInsights?.length) {
+        drawCardSection("Target Role Alignment & JD Insights", result.jdInsights, {
+          isBullet: true,
+          accentColor: [16, 185, 129], // Emerald
+          cardBg: [236, 253, 245],
+          textColor: [6, 95, 70]
+        });
+      }
+
+      // ─── 10. SUGGESTED CAREER TRAJECTORY ───
+      if (result.jobRoleSuggestions?.length) {
+        drawCardSection("Suggested Career Trajectory", [result.jobRoleSuggestions.join('   |   ')], {
+          isBullet: false,
+          accentColor: [99, 102, 241], // Indigo
+          cardBg: [245, 243, 255],
+          textColor: [67, 56, 202]
+        });
+      }
+
+      // ─── 11. MARKET READINESS EVALUATION ───
+      if (result.marketReadinessInsight) {
+        drawCardSection("Market Readiness Evaluation", [result.marketReadinessInsight], {
+          isBullet: false,
+          accentColor: [71, 85, 105], // Slate
+          cardBg: [248, 250, 252],
+          textColor: [30, 41, 59]
+        });
+      }
+
+      // ─── 12. NUMBER ALL PAGES & DRAW FOOTERS ───
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setDrawColor(...C_BORDER);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(...C_TEXT_MUTED);
+        pdf.text("Confidential  •  Generated by Rezum AI Resume Engine", margin, pageHeight - 9);
+        pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 9, { align: 'right' });
+      }
+
+      pdf.save(`Rezum-Audit-Report-${new Date().getTime()}.pdf`);
     } catch (error) {
        console.error('Export failed:', error);
-       alert('Export failed.');
+       alert('Export failed. Please try again.');
     }
   };
 
