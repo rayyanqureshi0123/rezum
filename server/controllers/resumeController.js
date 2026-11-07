@@ -101,7 +101,7 @@ export const analyzeResume = async (req, res) => {
           `,
         },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
       temperature: 0.4, 
       response_format: { type: "json_object" },
     });
@@ -220,7 +220,7 @@ export const rewriteBullet = async (req, res) => {
           }`
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
       temperature: 0.6,
       response_format: { type: "json_object" },
     });
@@ -276,7 +276,7 @@ export const generateCoverLetter = async (req, res) => {
           }`
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
       temperature: 0.7,
       response_format: { type: "json_object" },
     });
