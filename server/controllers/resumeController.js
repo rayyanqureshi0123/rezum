@@ -60,7 +60,7 @@ export const analyzeResume = async (req, res) => {
             - Reward relevant tech stack keywords, education, and clear project/work descriptions fairly.
 
             ANALYTICS:
-            - **quantificationScore**: Calculate the percentage (0-100) of bullet points that include measurable data (metrics, numbers, or percentages).
+            - **quantificationScore**: Evaluate the overall level of quantified data (0-100). Check for metrics, numbers, percentages (%), version numbers, scale indicators (users, requests, databases, projects), and academic scores (GPA/CGPA). If the candidate specifies technical versions and projects, give appropriate partial credit (e.g., 25-45) rather than 0.
             - **verbAnalysis**: Identify up to 3 passive or generic verbs (e.g., 'Helped', 'Worked on', 'Handled') and provide stronger, impactful action alternatives (e.g., 'Spearheaded', 'Engineered', 'Optimized').
 
             RUBRIC:
@@ -112,6 +112,18 @@ export const analyzeResume = async (req, res) => {
     // Guardrail: Fix rogue decimal probabilities
     if (analysisResult.interviewProbability > 0 && analysisResult.interviewProbability < 1) {
       analysisResult.interviewProbability = Math.round(analysisResult.interviewProbability * 100);
+    }
+
+    // Guardrail: Ensure realistic quantification score
+    if (!analysisResult.quantificationScore || analysisResult.quantificationScore < 10) {
+      const numbersFound = (resumeText.match(/\b\d+(\.\d+)?%?(\+)?\b/g) || []).length;
+      if (numbersFound >= 5) {
+        analysisResult.quantificationScore = Math.min(65, 20 + (numbersFound * 3));
+      } else if (numbersFound >= 2) {
+        analysisResult.quantificationScore = 25;
+      } else {
+        analysisResult.quantificationScore = 15;
+      }
     }
 
     const originalName = req.file.originalname;
